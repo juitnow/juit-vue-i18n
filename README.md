@@ -10,7 +10,6 @@ It heavily relies on the [`Intl.Locale`][1], [`Intl.NumberFormat`][2] and
 It also deeply integrates with Typescript to provide compile-time checking on
 required translation languages, and translation keys.
 
-
 ## Table of Contents
 
 - [Installation](#installation)
@@ -21,6 +20,7 @@ required translation languages, and translation keys.
   - [Pluralization](#pluralization)
 - [Formatting numbers](#formatting-numbers)
 - [Formatting dates](#formatting-dates)
+- [Configuring Types](#configuring-types)
 - [Legal Stuff](#legal-stuff)
 
 
