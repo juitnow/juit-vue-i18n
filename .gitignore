@@ -1,0 +1,5 @@
+*.tgz
+coverage/
+demo/
+dist/
+node_modules/
