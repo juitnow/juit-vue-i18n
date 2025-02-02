@@ -2,13 +2,14 @@ Juit I18n for Vue
 =================
 
 The `@juit/vue-i18n` package provides a _minimalistic_ plugin for VueJS (v. 3)
-to support basic internationalization (translations, numbers and date formats).
+to support basic internationalization (translations, numbers, and date formats).
 
-It heavily relies on the [`Intl.Locale`][1], [`Intl.NumberFormat`][2] and
+It heavily relies on the [`Intl.Locale`][1], [`Intl.NumberFormat`][2], and
 [`Intl.DateTimeFormat`][3] global objects widely supported by modern browsers.
 
-It also deeply integrates with Typescript to provide compile-time checking on
-required translation languages, and translation keys.
+It also deeply integrates with TypeScript to provide compile-time checking on
+required translation languages and translation keys.
+
 
 ## Table of Contents
 
@@ -56,18 +57,18 @@ const app = createApp(MyApp).use(i18n, {
 The plugin can be configured with a simple string (the `defaultLanguage`)
 described below, or some options:
 
-* `defaultLanguage`: the default language to use, all translations should be
+* `defaultLanguage`: the default language to use; all translations should be
                      available in this language.
 * `translations`: an object containing the translations for the messages to
                   translate, keyed by its identifier.
 * `formats`: configurations for number and date formatting:
-  * `dateTimeFormat`: a string (`short`, `medium`, `long` or `full`) used to
-                      format date-and-time values, or the options to be provided
-                      to the `Intl.DateTimeFormat` constructor.
-  * `dateOnlyFormat`: a string (`short`, `medium`, `long` or `full`) used to
+  * `dateTimeFormat`: a string (`short`, `medium`, `long`, or `full`) used to
+                      format date-and-time values, or the options to be
+                      provided to the `Intl.DateTimeFormat` constructor.
+  * `dateOnlyFormat`: a string (`short`, `medium`, `long`, or `full`) used to
                       format dates, or the options to be provided to the
                       `Intl.DateTimeFormat` constructor.
-  * `timeOnlyFormat`: a string (`short`, `medium`, `long` or `full`) used to
+  * `timeOnlyFormat`: a string (`short`, `medium`, `long`, or `full`) used to
                       format times, or the options to be provided to the
                       `Intl.DateTimeFormat` constructor.
 
@@ -117,7 +118,7 @@ const panagram = translator.t({
 
 ### Parameterizing translations
 
-Translations can include parameters enclosing them in curly braces `{param}`.
+Translations can include parameters by enclosing them in curly braces `{param}`.
 
 For example:
 
@@ -131,7 +132,7 @@ const string: translator.t({
 // This will result in either "Your name is John Doe" or "Ihr Name ist John Doe"
 ```
 
-When parameters are number, those will be formatted as numbers:
+When parameters are numbers, those will be formatted as numbers:
 
 ```typescript
 const string: translator.t({
@@ -149,10 +150,10 @@ translation messages with the `|` (pipe) character.
 
 Messages can contain two variants `singular|plural` or three variants
 `zero|singular|plural`, with each variant used when the reference number to
-pluralized is either zero, one or another number:
+pluralize is either zero, one, or another number:
 
 To contextualize the number, either use the `n` parameter, or use the `tc(...)`
-function which will take, as a second parameter, the reference number
+function which will take, as a second parameter, the reference number.
 
 For example:
 
@@ -189,7 +190,7 @@ const number = translator.n(1234.5)
 // the "number" string will be "1,234.5", "1.234,5" or whatever locale specified
 ```
 
-A currency can be specified as a second parameter, for quick formatting:
+A currency can be specified as a second parameter for quick formatting:
 
 ```typescript
 import { useTranslator } from '@juit/vue-i18n'
@@ -211,7 +212,7 @@ The default format can be specified when configuring the plugin as the
 
 The `d(...)` function can be used to format date-and-time values in the current
 locale, together with the `d.date(...)` to format only dates, or `d.time(...)`
-to format only times
+to format only times.
 
 ```typescript
 import { useTranslator } from '@juit/vue-i18n'
@@ -230,34 +231,34 @@ The second parameter can also be a simple string `full`, `long`, `medium`, or
 `short`, as a shortcut to `options.dateStyle` or `options.timeStyle`.
 
 The default formatting options for each method can be specified at configuration
-time, using the `formats.dateTimeFormat`, `formats.dateOnlyFormat` or
+time, using the `formats.dateTimeFormat`, `formats.dateOnlyFormat`, or
 `formats.timeOnlyFormat` parameters.
 
-By default they are all set to `medium`.
+By default, they are all set to `medium`.
 
 
 ## Configuring Types
 
-One of the keys of this package is to provide compile time safety for all
+One of the keys to this package is to provide compile-time safety for all
 translation languages (we don't want to forget to translate a message in
 a new language) and translation keys (we don't want to mistype a translation
 key by accident).
 
-To do so we can _merge_ the `I18nConfiguration` interface of this package
+To do so, we can _merge_ the `I18nConfiguration` interface of this package
 with our specific configurations. Two properties are expected to be defined
 in the configuration:
 
-* `languages`: the list of supported languages for the application. Those
+* `languages`: the list of supported languages for the application. These
                are ISO 639-1 language codes, and when specified, _every_
                translation _must_ include a translation for each.
 * `translationKeys`: the list of translation keys known by the application.
-                     Those are the arbitrary keys used to identify the
-                     messages to be  translated with the `t` and `tc`
+                     These are the arbitrary keys used to identify the
+                     messages to be translated with the `t` and `tc`
                      methods of `Translator`.
 
 To configure the types, follow the example below:
 
-```ts
+```typescript
 const translations = {
   'hello': { en: 'Hello, world!', de: 'Hallo, Welt!' }
 } as const satisfies TranslationsOptions
@@ -271,9 +272,9 @@ declare module '@juit/vue-i18n' {
 ```
 
 In the example above, if any of the translation objects in our app is missing
-a language (either `en` or `de`) TypeScript will complain.
+a language (either `en` or `de`), TypeScript will complain.
 
-In the same way if we pass any other string but `hello` to `t(...)` or `tc(...)`
+In the same way, if we pass any other string but `hello` to `t(...)` or `tc(...)`,
 TypeScript will report the wrong key.
 
 
@@ -281,6 +282,7 @@ TypeScript will report the wrong key.
 
 * [Copyright Notice](NOTICE.md)
 * [License](LICENSE.md)
+
 
 [1]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale
 [2]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat
