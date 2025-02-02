@@ -1,5 +1,5 @@
 /** Array of all known ISO-3166-1 countries */
-export const isoCountries = {
+export type IsoCountries = {
   AD: 'Andorra',
   AE: 'United Arab Emirates',
   AF: 'Afghanistan',
@@ -251,4 +251,4 @@ export const isoCountries = {
 }
 
 /** Array of all known ISO-3166-1 countries */
-export type ISOCountry = keyof typeof isoCountries
+export type ISOCountry = keyof IsoCountries

@@ -1,8 +1,5 @@
 import { computed, reactive, shallowRef, warn } from 'vue'
 
-import { isoCountries } from './iso-3166'
-import { isoLanguages } from './iso-639'
-
 import type { DateTimeFormats, I18nOptions, ISOCountry, Translation, TranslationKey } from './index'
 import type { ISOLanguage } from './iso-639'
 
@@ -130,14 +127,6 @@ export function makeTranslator(options: I18nOptions): Translator {
       new Intl.Locale(options.defaultLanguage) :
       options.defaultLanguage
 
-  // Check and warn about wrong locale/region code
-  if (!(defaultLocale.language in isoLanguages)) {
-    warn(`Unknown language code "${defaultLocale.language}"`)
-  }
-  if (defaultLocale.region && !(defaultLocale.region in isoCountries)) {
-    warn(`Invalid region code "${defaultLocale.region}"`)
-  }
-
   // Normalized default language (language-REGION)
   const defaultLanguage = defaultLocale.region ?
       `${defaultLocale.language}-${defaultLocale.region}` :
@@ -199,7 +188,6 @@ export function makeTranslator(options: I18nOptions): Translator {
     },
 
     set language(value: ISOLanguage) {
-      if (!(value in isoLanguages)) warn(`Unknown language code "${defaultLocale.language}"`)
       translator.locale = new Intl.Locale(value, { ...locale.value })
     },
 
@@ -208,7 +196,6 @@ export function makeTranslator(options: I18nOptions): Translator {
     },
 
     set region(value: ISOCountry | undefined) {
-      if (value && !(value in isoCountries)) warn(`Invalid region code "${defaultLocale.region}"`)
       translator.locale = new Intl.Locale(translator.language, { ...translator.locale, region: value || undefined })
     },
 

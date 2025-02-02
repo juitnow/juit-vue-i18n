@@ -1,5 +1,5 @@
 /** Array of all known ISO-639-1 languages */
-export const isoLanguages = {
+export type IsoLanguages = {
   aa: 'Afar',
   ab: 'Abkhazian',
   ae: 'Avestan',
@@ -184,7 +184,7 @@ export const isoLanguages = {
   za: 'Zhuang',
   zh: 'Chinese',
   zu: 'Zulu',
-} as const
+}
 
 /** All known ISO-639-1 languages */
-export type ISOLanguage = keyof typeof isoLanguages
+export type ISOLanguage = keyof IsoLanguages

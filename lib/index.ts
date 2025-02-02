@@ -8,8 +8,8 @@ import type { Translator } from './translator'
 
 /* ===== REFERENCE LANGUAGES AND COUNTRIES ================================== */
 
-export * from './iso-3166'
-export * from './iso-639'
+export type * from './iso-3166'
+export type * from './iso-639'
 
 /* ===== TYPES FOR DECLARATION MERGING ====================================== */
 
