@@ -154,7 +154,7 @@ export function makeTranslator(options: I18nOptions): Translator {
 
   // Date-time translator, from the current locale
   function dateTime(input?: DateInput, style = dateTimeFormat): string {
-    if (input == null) return ''
+    if ((input == null) || (input === '')) return ''
 
     const date = input instanceof Date ? input : new Date(input)
     const options = typeof style === 'string' ? { dateStyle: style, timeStyle: style } : style
