@@ -1,5 +1,5 @@
-/** Array of all known ISO-639-1 languages */
-export type IsoLanguages = {
+/** All known ISO-639-1 languages and their name */
+export type ISOLanguages = {
   aa: 'Afar',
   ab: 'Abkhazian',
   ae: 'Avestan',
@@ -186,5 +186,5 @@ export type IsoLanguages = {
   zu: 'Zulu',
 }
 
-/** All known ISO-639-1 languages */
-export type ISOLanguage = keyof IsoLanguages
+/** All known ISO-639-1 language codes */
+export type ISOLanguage = keyof ISOLanguages

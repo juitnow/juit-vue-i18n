@@ -61,16 +61,87 @@ described below, or some options:
                      available in this language.
 * `translations`: an object containing the translations for the messages to
                   translate, keyed by its identifier.
-* `formats`: configurations for number and date formatting:
-  * `dateTimeFormat`: a string (`short`, `medium`, `long`, or `full`) used to
-                      format date-and-time values, or the options to be
-                      provided to the `Intl.DateTimeFormat` constructor.
-  * `dateOnlyFormat`: a string (`short`, `medium`, `long`, or `full`) used to
-                      format dates, or the options to be provided to the
-                      `Intl.DateTimeFormat` constructor.
-  * `timeOnlyFormat`: a string (`short`, `medium`, `long`, or `full`) used to
-                      format times, or the options to be provided to the
-                      `Intl.DateTimeFormat` constructor.
+* `dateTimeFormats`: date and time format aliases used formatting dates.
+* `numberFormats`: number format aliases used formatting numbers.
+
+
+### Date Time Format Aliases
+
+Date time formatting aliases can be configured keyed by a simple string and
+values as [`Intl.DateTimeFormatOptions`][5]
+
+```typescript
+import { createApp } from 'vue'
+import { i18n } from '@juit/vue-i18n'
+import MyApp from './app.vue'
+
+const app = createApp(MyApp).use(i18n, {
+  defaultLanguage: 'en',
+  dateTimeFormats: {
+    custom: {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    },
+  }
+})
+```
+
+The default (overridable) formats are as follows:
+
+```typescript
+ {
+   // used when no alias or date time format is specified
+   default: { dateStyle: 'medium', timeStyle: 'medium' },
+
+   // generic formats
+   short: { dateStyle: 'short', timeStyle: 'short' },
+   medium: { dateStyle: 'medium', timeStyle: 'medium' },
+   long: { dateStyle: 'long', timeStyle: 'long' },
+   full: { dateStyle: 'full', timeStyle: 'full' },
+
+   // date only formats
+   date: { dateStyle: 'medium' },
+   shortDate: { dateStyle: 'short' },
+   mediumDate: { dateStyle: 'medium' },
+   longDate: { dateStyle: 'long' },
+   fullDate: { dateStyle: 'full' },
+
+   // time only formats
+   time: { timeStyle: 'medium' },
+   shortTime: { timeStyle: 'short' },
+   mediumTime: { timeStyle: 'medium' },
+   longTime: { timeStyle: 'long' },
+   fullTime: { timeStyle: 'full' },
+}
+```
+
+
+### Number Format Aliases
+
+Similarly to date time, also number formatting aliases can be configured keyed
+by a simple string and values as [`Intl.NumberFormatOptions`][4]
+
+```typescript
+import { createApp } from 'vue'
+import { i18n } from '@juit/vue-i18n'
+import MyApp from './app.vue'
+
+const app = createApp(MyApp).use(i18n, {
+  defaultLanguage: 'en',
+  numberFormats: {
+    speed: {
+      style: 'unit',
+      unit: 'kilometer-per-hour',
+    }
+  }
+})
+```
+
+While there is no intrinsic default, each valid ISO-4217 currency code
+(e.g. `EUR`, `USD`, ...) can be used as an alias.
+
+To configure the default number format use the `default` key.
 
 
 ## Usage
@@ -211,8 +282,10 @@ The default format can be specified when configuring the plugin as the
 ## Formatting dates
 
 The `d(...)` function can be used to format date-and-time values in the current
-locale, together with the `d.date(...)` to format only dates, or `d.time(...)`
-to format only times.
+locale.
+
+When the second parameter is a string, it is considered to be one of the
+_aliases_ configured when the plugin is setup.
 
 ```typescript
 import { useTranslator } from '@juit/vue-i18n'
@@ -220,21 +293,12 @@ import { useTranslator } from '@juit/vue-i18n'
 const translator = useTranslator()
 
 const dateTime = translator.d(new Date()) // e.g. '03.02.2025, 18:08:05' in de-DE
-const dateOnly = translator.d.date(new Date()) // e.g. '03.02.2025' in de-DE
-const dateTime = translator.d.time(new Date()) // e.g. '18:08:05' in de-DE
+const dateOnly = translator.d(new Date(), 'date') // e.g. '03.02.2025' in de-DE
+const dateTime = translator.d(new Date(), 'time') // e.g. '18:08:05' in de-DE
 ```
 
 A full [`Intl.DateTimeFormatOptions`][5] set of options can also be specified
 as a second parameter to fine-tune the formatting.
-
-The second parameter can also be a simple string `full`, `long`, `medium`, or
-`short`, as a shortcut to `options.dateStyle` or `options.timeStyle`.
-
-The default formatting options for each method can be specified at configuration
-time, using the `formats.dateTimeFormat`, `formats.dateOnlyFormat`, or
-`formats.timeOnlyFormat` parameters.
-
-By default, they are all set to `medium`.
 
 
 ## Configuring Types
@@ -255,27 +319,59 @@ in the configuration:
                      These are the arbitrary keys used to identify the
                      messages to be translated with the `t` and `tc`
                      methods of `Translator`.
+* `dateTimeFormats`: the date and time formats _aliases_ used by the
+                     application.
+* `numberFormats`: the number formats _aliases_ used by the application.
 
 To configure the types, follow the example below:
 
 ```typescript
 const translations = {
-  'hello': { en: 'Hello, world!', de: 'Hallo, Welt!' }
-} as const satisfies TranslationsOptions
+  hello: { en: 'Hello, world!', de: 'Hallo, Welt!' }
+} as const satisfies Translations
+
+const dateTimeFormats = {
+  // override the default format
+  default: { dateStyle: 'short', timeStyle: 'short' },
+  // add a new custom format
+  custom: {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    weekday: 'short',
+    timeZone: 'UTC',
+  },
+} as const satisfies DateTimeFormats
+
+const numberFormats = {
+  speed: { style: 'unit', unit: 'kilometer-per-hour' },
+} as const satisfies NumberFormats
 
 declare module '@juit/vue-i18n' {
   export interface I18nConfiguration {
-    translationKeys: keyof typeof translations
-    languages: 'de' | 'en'
+    languages: 'de' | 'en',
+    translationKeys: keyof typeof translations,
+    dateTimeFormats: keyof typeof dateTimeFormats,
+    numberFormats: keyof typeof numberFormats,
   }
 }
+
+const app = createApp(MyApp).use(i18n, {
+  defaultLanguage: 'en',
+  translations,
+  dateTimeFormats,
+  numberFormats,
+})
 ```
 
 In the example above, if any of the translation objects in our app is missing
 a language (either `en` or `de`), TypeScript will complain.
 
-In the same way, if we pass any other string but `hello` to `t(...)` or `tc(...)`,
-TypeScript will report the wrong key.
+In the same way, if we pass any other string but `hello` to `t(...)` or
+`tc(...)`, TypeScript will report the wrong key.
+
+Also, date time format aliases will be augumented using the customizations
+specified in `dateTimeFormats` and `numberFormats`.
 
 
 ## Legal Stuff

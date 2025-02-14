@@ -3,6 +3,7 @@ import { inject } from 'vue'
 import { makeTranslator } from './translator'
 
 import type { App } from 'vue'
+import type { ISOCurrency } from './iso-4217'
 import type { ISOLanguage } from './iso-639'
 import type { Translator } from './translator'
 
@@ -29,25 +30,46 @@ export type * from './iso-639'
  *                      Those are the arbitrary keys used to identify the
  *                      messages to be  translated with the `t` and `tc`
  *                      methods of `Translator`.
+ * * `dateTimeFormats`: the date and time formats _aliases_ used by the
+ *                      application.
+ * * `numberFormats`: the number formats _aliases_ used by the application.
  *
  * To configure the types, follow the example below:
  *
  * ```ts
  * const translations = {
  *   'hello': { en: 'Hello, world!', de: 'Hallo, Welt!' }
- * } as const satisfies TranslationsOptions
+ * } as const satisfies Translations
+ *
+ * const dateTimeFormats = {
+ *  // override the default format
+ *  default: { dateStyle: 'short', timeStyle: 'short' },
+ *  // add a new custom format
+ *  custom: {
+ *    day: '2-digit',
+ *    month: '2-digit',
+ *    year: 'numeric',
+ *    weekday: 'short',
+ *    timeZone: 'UTC',
+ *  },
+ * } as const satisfies DateTimeFormats
+ *
+ * const numberFormats = {
+ *  speed: { style: 'unit', unit: 'kilometer-per-hour' },
+ * } as const satisfies NumberFormats
  *
  * declare module '@juit/vue-i18n' {
  *   export interface I18nConfiguration {
- *     translationKeys: keyof typeof translations
- *     languages: 'de' | 'en'
+ *     languages: 'de' | 'en',
+ *     translationKeys: keyof typeof translations,
+ *     dateTimeFormats: keyof typeof dateTimeFormats,
+ *     numberFormats: keyof typeof numberFormats,
  *   }
  * }
  * ```
  */
 export interface I18nConfiguration {
-  // languages: 'de' | 'en'
-  // translationKeys: 'hello'
+  // intentionally empty
 }
 
 /* ===== FROM CONFIG TO TRANSLATIONS ======================================== */
@@ -95,6 +117,32 @@ export type Translation = PrettifyTranslation<BaseTranslation & ExtendedTranslat
  */
 export type TranslationKey = ExtractConfig<I18nConfiguration, string, 'translationKeys'>
 
+/**
+ * All known date and time formats aliases.
+ *
+ * When the `I18nConfig` interface is properly merged with and its contains
+ * the `dateTimeFormats` property, this type will represent the list of
+ * date and time formats available to the `d(...)` method.
+ *
+ * When left unconfigured, this type will be `string`.
+ */
+export type DateTimeFormatAlias = ExtractConfig<I18nConfiguration, string, 'dateTimeFormats'>
+  | 'default' | 'short' | 'medium' | 'long' | 'full'
+  | 'date' | 'shortDate' | 'mediumDate' | 'longDate' | 'fullDate'
+  | 'time' | 'shortTime' | 'mediumTime' | 'longTime' | 'fullTime'
+
+/**
+ * All known number formats aliases.
+ *
+ * When the `I18nConfig` interface is properly merged with and its contains
+ * the `numberFormats` property, this type will represent the list of
+ * date and time formats available to the `n(...)` method.
+ *
+ * When left unconfigured, this type will be `string`.
+ */
+export type NumberFormatAlias = ExtractConfig<I18nConfiguration, string, 'numberFormats'>
+  | 'default' | ISOCurrency
+
 /* ===== MODULE INITIALIZATION ============================================== */
 
 /* Export the translator types */
@@ -112,19 +160,56 @@ export interface Translations {
 }
 
 /**
- * Options to initialize the date and time formats used by the translation
- * system.
+ * Options to initialize the date and time format _aliases_ used by the
+ * translation system.
  *
- * * `dateTimeFormat`: the default format for times and dates used by `$d(...)`.
- * * `dateOnlyFormat`: the default format for dates used by `$d.date(...)`.
- * * `timeOnlyFormat`: the default format for times used by `$d.time(...)`.
- * * `numberFormat`: the default format for numbers used by `$n(...)`.
+ * The default aliases (each can be overridden) are:
+ *
+ * ```ts
+ * {
+ *   default: { dateStyle: 'medium', timeStyle: 'medium' },
+ *   short: { dateStyle: 'short', timeStyle: 'short' },
+ *   medium: { dateStyle: 'medium', timeStyle: 'medium' },
+ *   long: { dateStyle: 'long', timeStyle: 'long' },
+ *   full: { dateStyle: 'full', timeStyle: 'full' },
+ *
+ *   // date only formats
+ *   date: { dateStyle: 'medium' },
+ *   shortDate: { dateStyle: 'short' },
+ *   mediumDate: { dateStyle: 'medium' },
+ *   longDate: { dateStyle: 'long' },
+ *   fullDate: { dateStyle: 'full' },
+ *
+ *   // time only formats
+ *   time: { timeStyle: 'medium' },
+ *   shortTime: { timeStyle: 'short' },
+ *   mediumTime: { timeStyle: 'medium' },
+ *   longTime: { timeStyle: 'long' },
+ *   fullTime: { timeStyle: 'full' },
+ * }
+ * ```
  */
 export interface DateTimeFormats {
-  dateOnlyFormat?: Intl.DateTimeFormatOptions | Intl.DateTimeFormatOptions['dateStyle']
-  timeOnlyFormat?: Intl.DateTimeFormatOptions | Intl.DateTimeFormatOptions['timeStyle']
-  dateTimeFormat?: Intl.DateTimeFormatOptions | (Intl.DateTimeFormatOptions['dateStyle'] & Intl.DateTimeFormatOptions['timeStyle'])
-  numberFormat?: Intl.NumberFormatOptions
+  readonly [ key: string ]: Intl.DateTimeFormatOptions
+}
+
+/**
+ * Options to initialize the number format _aliases_ used by the translation
+ * system.
+ *
+ * The default aliases (each can be overridden) are:
+ *
+ * ```ts
+ * {
+ *   default: { }, // use the default number format
+ *   EUR: { style: 'currency', currency: 'EUR' },
+ *   USD: { style: 'currency', currency: 'USD' },
+ *   // ... all currency codes can be used as aliases
+ * }
+ * ```
+ */
+export interface NumberFormats {
+  readonly [ key: string ]: Intl.NumberFormatOptions
 }
 
 /** The language or locale to use at construction */
@@ -134,7 +219,8 @@ export type DefaultLanguage = ISOLanguage | `${ISOLanguage}-${string}` | Intl.Lo
 export interface I18nOptions {
   defaultLanguage: DefaultLanguage,
   translations?: Translations,
-  formats?: DateTimeFormats,
+  dateTimeFormats?: DateTimeFormats,
+  numberFormats?: NumberFormats,
 }
 
 /* ===== PUBLIC METHODS ===================================================== */
