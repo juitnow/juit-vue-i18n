@@ -1,5 +1,5 @@
-/** Array of all known ISO-3166-1 countries */
-export type IsoCountries = {
+/** All known ISO-3166-1 countries and their names */
+export type ISOCountries = {
   AD: 'Andorra',
   AE: 'United Arab Emirates',
   AF: 'Afghanistan',
@@ -250,5 +250,5 @@ export type IsoCountries = {
   ZW: 'Zimbabwe',
 }
 
-/** Array of all known ISO-3166-1 countries */
-export type ISOCountry = keyof IsoCountries
+/** Array of all known ISO-3166-1 country names */
+export type ISOCountry = keyof ISOCountries
