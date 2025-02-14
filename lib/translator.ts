@@ -1,4 +1,4 @@
-import { computed, reactive, shallowRef, warn } from 'vue'
+import { computed, reactive, shallowRef, warn, watch } from 'vue'
 
 import type {
   DateTimeFormatAlias,
@@ -104,6 +104,30 @@ export interface Translator {
 
 /* ===== TRANSLATOR IMPLEMENTATION ========================================== */
 
+function checkLocale(locale: Intl.Locale): void {
+  let languageString: string | undefined
+  try {
+    languageString = new Intl.DisplayNames('en-US', { type: 'language' }).of(locale.language)
+  /* v8 ignore next */
+  } catch { /* */ }
+
+  if ((! languageString) || (languageString === locale.language)) {
+    warn(`Unknown language code "${locale.language}"`)
+  }
+
+  if (! locale.region) return
+
+  let regionString: string | undefined
+  try {
+    regionString = new Intl.DisplayNames('en-US', { type: 'region' }).of(locale.region)
+  /* v8 ignore next */
+  } catch { /* */ }
+
+  if ((! regionString) || (regionString === 'Unknown Region') || (regionString === locale.region)) {
+    warn(`Unknown region code "${locale.region}"`)
+  }
+}
+
 /** Create a _reactive_ translator object from the given options */
 export function makeTranslator(options: I18nOptions): Translator {
   // Default locale, parsing the default language
@@ -156,6 +180,8 @@ export function makeTranslator(options: I18nOptions): Translator {
 
   // Current locale, from the browser's language settings
   const locale = shallowRef(new Intl.Locale(defaultLanguage))
+  watch(locale, checkLocale, { immediate: true })
+  // checkLocale(locale.value)
 
   // Language order, from the current locale
   const languages = computed(() => {
