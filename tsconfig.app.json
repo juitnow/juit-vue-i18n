@@ -3,7 +3,7 @@
     "module": "esnext",
     "target": "esnext",
     "moduleResolution": "bundler",
-    "lib": [ "es2021", "dom", "dom.iterable" ],
+    "lib": [ "es2022", "dom", "dom.iterable" ],
     "types": [],
 
     "strict": true,
