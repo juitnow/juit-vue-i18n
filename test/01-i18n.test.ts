@@ -110,19 +110,20 @@ describe('I18N Plugin', () => {
     expect(translator.d(date.getTime())).toBe(dateTimeEN)
     expect(translator.d(date.toISOString())).toBe(dateTimeEN)
     expect(translator.d(null)).toBe('')
+    expect(translator.d('')).toBe('')
     expect(translator.d()).toBe('')
 
-    expect(translator.d.date(date)).toBe(dateOnlyEN)
-    expect(translator.d.date(date.getTime())).toBe(dateOnlyEN)
-    expect(translator.d.date(date.toISOString())).toBe(dateOnlyEN)
-    expect(translator.d.date(null)).toBe('')
-    expect(translator.d.date()).toBe('')
+    expect(translator.d(date, 'date')).toBe(dateOnlyEN)
+    expect(translator.d(date.getTime(), 'date')).toBe(dateOnlyEN)
+    expect(translator.d(date.toISOString(), 'date')).toBe(dateOnlyEN)
+    expect(translator.d(null, 'date')).toBe('')
+    expect(translator.d('', 'date')).toBe('')
 
-    expect(translator.d.time(date)).toBe(timeOnlyEN)
-    expect(translator.d.time(date.getTime())).toBe(timeOnlyEN)
-    expect(translator.d.time(date.toISOString())).toBe(timeOnlyEN)
-    expect(translator.d.time(null)).toBe('')
-    expect(translator.d.time()).toBe('')
+    expect(translator.d(date, 'time')).toBe(timeOnlyEN)
+    expect(translator.d(date.getTime(), 'time')).toBe(timeOnlyEN)
+    expect(translator.d(date.toISOString(), 'time')).toBe(timeOnlyEN)
+    expect(translator.d(null, 'time')).toBe('')
+    expect(translator.d('', 'time')).toBe('')
 
     translator.locale = new Intl.Locale('de-DE')
 
@@ -130,19 +131,20 @@ describe('I18N Plugin', () => {
     expect(translator.d(date.getTime())).toBe(dateTimeDE)
     expect(translator.d(date.toISOString())).toBe(dateTimeDE)
     expect(translator.d(null)).toBe('')
+    expect(translator.d('')).toBe('')
     expect(translator.d()).toBe('')
 
-    expect(translator.d.date(date)).toBe(dateOnlyDE)
-    expect(translator.d.date(date.getTime())).toBe(dateOnlyDE)
-    expect(translator.d.date(date.toISOString())).toBe(dateOnlyDE)
-    expect(translator.d.date(null)).toBe('')
-    expect(translator.d.date()).toBe('')
+    expect(translator.d(date, 'date')).toBe(dateOnlyDE)
+    expect(translator.d(date.getTime(), 'date')).toBe(dateOnlyDE)
+    expect(translator.d(date.toISOString(), 'date')).toBe(dateOnlyDE)
+    expect(translator.d(null, 'date')).toBe('')
+    expect(translator.d('', 'date')).toBe('')
 
-    expect(translator.d.time(date)).toBe(timeOnlyDE)
-    expect(translator.d.time(date.getTime())).toBe(timeOnlyDE)
-    expect(translator.d.time(date.toISOString())).toBe(timeOnlyDE)
-    expect(translator.d.time(null)).toBe('')
-    expect(translator.d.time()).toBe('')
+    expect(translator.d(date, 'time')).toBe(timeOnlyDE)
+    expect(translator.d(date.getTime(), 'time')).toBe(timeOnlyDE)
+    expect(translator.d(date.toISOString(), 'time')).toBe(timeOnlyDE)
+    expect(translator.d(null, 'time')).toBe('')
+    expect(translator.d('', 'time')).toBe('')
   })
 
   it('should format a date and time in various languages with string styles', (context) => {
@@ -157,55 +159,15 @@ describe('I18N Plugin', () => {
     expect(translator.d(date, 'long')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeStyle: 'long' }).format(date))
     expect(translator.d(date, 'full')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'full', timeStyle: 'full' }).format(date))
 
-    expect(translator.d.date(date, 'short')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(date))
-    expect(translator.d.date(date, 'medium')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(date))
-    expect(translator.d.date(date, 'long')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'long' }).format(date))
-    expect(translator.d.date(date, 'full')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'full' }).format(date))
+    expect(translator.d(date, 'shortDate')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(date))
+    expect(translator.d(date, 'mediumDate')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(date))
+    expect(translator.d(date, 'longDate')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'long' }).format(date))
+    expect(translator.d(date, 'fullDate')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'full' }).format(date))
 
-    expect(translator.d.time(date, 'short')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'short' }).format(date))
-    expect(translator.d.time(date, 'medium')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'medium' }).format(date))
-    expect(translator.d.time(date, 'long')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'long' }).format(date))
-    expect(translator.d.time(date, 'full')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'full' }).format(date))
-
-    translator.locale = new Intl.Locale('de-DE')
-
-    expect(translator.d(date, 'short')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'short', timeStyle: 'short' }).format(date))
-    expect(translator.d(date, 'medium')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'medium' }).format(date))
-    expect(translator.d(date, 'long')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'long', timeStyle: 'long' }).format(date))
-    expect(translator.d(date, 'full')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'full', timeStyle: 'full' }).format(date))
-
-    expect(translator.d.date(date, 'short')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'short' }).format(date))
-    expect(translator.d.date(date, 'medium')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(date))
-    expect(translator.d.date(date, 'long')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'long' }).format(date))
-    expect(translator.d.date(date, 'full')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'full' }).format(date))
-
-    expect(translator.d.time(date, 'short')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'short' }).format(date))
-    expect(translator.d.time(date, 'medium')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'medium' }).format(date))
-    expect(translator.d.time(date, 'long')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'long' }).format(date))
-    expect(translator.d.time(date, 'full')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'full' }).format(date))
-  })
-
-  it('should format a date and time in various languages with string styles', (context) => {
-    if (!translator) return context.skip()
-
-    const date = new Date(1234567890123) // remember, by default the timezone is local, sooooo...
-
-    translator.locale = new Intl.Locale('en-US')
-
-    expect(translator.d(date, 'short')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'short', timeStyle: 'short' }).format(date))
-    expect(translator.d(date, 'medium')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'medium' }).format(date))
-    expect(translator.d(date, 'long')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeStyle: 'long' }).format(date))
-    expect(translator.d(date, 'full')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'full', timeStyle: 'full' }).format(date))
-
-    expect(translator.d.date(date, 'short')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(date))
-    expect(translator.d.date(date, 'medium')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(date))
-    expect(translator.d.date(date, 'long')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'long' }).format(date))
-    expect(translator.d.date(date, 'full')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'full' }).format(date))
-
-    expect(translator.d.time(date, 'short')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'short' }).format(date))
-    expect(translator.d.time(date, 'medium')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'medium' }).format(date))
-    expect(translator.d.time(date, 'long')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'long' }).format(date))
-    expect(translator.d.time(date, 'full')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'full' }).format(date))
+    expect(translator.d(date, 'shortTime')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'short' }).format(date))
+    expect(translator.d(date, 'mediumTime')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'medium' }).format(date))
+    expect(translator.d(date, 'longTime')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'long' }).format(date))
+    expect(translator.d(date, 'fullTime')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'full' }).format(date))
 
     translator.locale = new Intl.Locale('de-DE')
 
@@ -214,15 +176,15 @@ describe('I18N Plugin', () => {
     expect(translator.d(date, 'long')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'long', timeStyle: 'long' }).format(date))
     expect(translator.d(date, 'full')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'full', timeStyle: 'full' }).format(date))
 
-    expect(translator.d.date(date, 'short')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'short' }).format(date))
-    expect(translator.d.date(date, 'medium')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(date))
-    expect(translator.d.date(date, 'long')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'long' }).format(date))
-    expect(translator.d.date(date, 'full')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'full' }).format(date))
+    expect(translator.d(date, 'shortDate')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'short' }).format(date))
+    expect(translator.d(date, 'mediumDate')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(date))
+    expect(translator.d(date, 'longDate')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'long' }).format(date))
+    expect(translator.d(date, 'fullDate')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'full' }).format(date))
 
-    expect(translator.d.time(date, 'short')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'short' }).format(date))
-    expect(translator.d.time(date, 'medium')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'medium' }).format(date))
-    expect(translator.d.time(date, 'long')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'long' }).format(date))
-    expect(translator.d.time(date, 'full')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'full' }).format(date))
+    expect(translator.d(date, 'shortTime')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'short' }).format(date))
+    expect(translator.d(date, 'mediumTime')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'medium' }).format(date))
+    expect(translator.d(date, 'longTime')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'long' }).format(date))
+    expect(translator.d(date, 'fullTime')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'full' }).format(date))
   })
 
   it('should format a date and time in various languages with object formats', (context) => {
@@ -245,21 +207,6 @@ describe('I18N Plugin', () => {
       timeZoneName: 'long',
     })).toBe('Friday, 02/13/2009, 18:31:30 Eastern Standard Time')
 
-    expect(translator.d.date(date, {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      timeZone: 'UTC',
-    })).toBe('02/13/2009')
-
-    expect(translator.d.time(date, {
-      hour12: false,
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      timeZone: 'UTC',
-    })).toBe('23:31:30')
-
     translator.locale = new Intl.Locale('de-DE')
 
     expect(translator.d(date, {
@@ -274,14 +221,24 @@ describe('I18N Plugin', () => {
       timeZone: 'Europe/Berlin',
       timeZoneName: 'long',
     })).toBe('Samstag, 14.02.2009, 00:31:30 Mitteleuropäische Normalzeit')
+  })
 
-    expect(translator.d.date(date, {
-      hour12: false,
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      timeZone: 'UTC',
-    })).toBe('23:31:30')
+  it('should format a number in various languages with object formats', (context) => {
+    if (!translator) return context.skip()
+
+    translator.locale = new Intl.Locale('en-US')
+
+    expect(translator.n(1234.56, {
+      style: 'unit',
+      unit: 'meter-per-second',
+    })).toBe('1,234.56 m/s')
+
+    translator.locale = new Intl.Locale('de-DE')
+
+    expect(translator.n(1234.56, {
+      style: 'unit',
+      unit: 'meter-per-second',
+    })).toBe('1.234,56 m/s')
   })
 
   it('should parameterize translations', (context) => {
@@ -401,11 +358,14 @@ describe('I18N Plugin', () => {
   it('should configure default formats', () => {
     const translator = makeTranslator({
       defaultLanguage: 'en',
-      formats: {
-        dateOnlyFormat: { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' },
-        timeOnlyFormat: { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'UTC' },
-        dateTimeFormat: { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'UTC' },
-        numberFormat: { style: 'currency', currency: 'USD' }, // bogus, all numbers are currencies, but it's just a test
+      dateTimeFormats: {
+        default: { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'UTC' },
+        date: { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' },
+        time: { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'UTC' },
+      },
+      numberFormats: {
+        default: { style: 'unit', unit: 'meter-per-second' },
+        test: { style: 'currency', currency: 'JPY' },
       },
     })
 
@@ -413,15 +373,19 @@ describe('I18N Plugin', () => {
 
     translator.locale = new Intl.Locale('en-US')
     expect(translator.d(date)).toBe('02/13/2009, 23:31:30')
-    expect(translator.d.date(date)).toBe('02/13/2009')
-    expect(translator.d.time(date)).toBe('23:31:30')
-    expect(translator.n(1234.56)).toBe('$1,234.56')
+    expect(translator.d(date, 'date')).toBe('02/13/2009')
+    expect(translator.d(date, 'time')).toBe('23:31:30')
+    expect(translator.n(1234.56)).toBe('1,234.56 m/s')
+    expect(translator.n(1234.56, 'test')).toBe('¥1,235') // no decimal on JPY
+    expect(translator.n(1234.56, 'EUR')).toBe('€1,234.56')
 
     translator.locale = new Intl.Locale('de-DE')
     expect(translator.d(date)).toBe('13.02.2009, 23:31:30')
-    expect(translator.d.date(date)).toBe('13.02.2009')
-    expect(translator.d.time(date)).toBe('23:31:30')
-    expect(translator.n(1234.56)).toBe('1.234,56\xA0$')
+    expect(translator.d(date, 'date')).toBe('13.02.2009')
+    expect(translator.d(date, 'time')).toBe('23:31:30')
+    expect(translator.n(1234.56)).toBe('1.234,56 m/s')
+    expect(translator.n(1234.56, 'test')).toBe('1.235\xA0¥')
+    expect(translator.n(1234.56, 'EUR')).toBe('1.234,56\xA0€')
   })
 
   describe('Edge Cases', () => {
@@ -459,6 +423,16 @@ describe('I18N Plugin', () => {
     it('should warn when missing the default language', () => {
       const translator = makeTranslator({ defaultLanguage: 'en' })
       expect(translator.t({ de: 'flipper' })).toBe('')
+    })
+
+    it('should warn when the date time format is invalid', () => {
+      const translator = makeTranslator({ defaultLanguage: 'en' })
+      expect(translator.d(new Date(), 'bogus')).toBeTypeOf('string')
+    })
+
+    it('should warn when the number format is invalid', () => {
+      const translator = makeTranslator({ defaultLanguage: 'en' })
+      expect(translator.n(1234.56, 'bogus')).toBeTypeOf('string')
     })
   })
 })
