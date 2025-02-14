@@ -1,6 +1,15 @@
 import { computed, reactive, shallowRef, warn } from 'vue'
 
-import type { DateTimeFormats, I18nOptions, ISOCountry, Translation, TranslationKey } from './index'
+import type {
+  DateTimeFormatAlias,
+  DateTimeFormats,
+  I18nOptions,
+  ISOCountry,
+  NumberFormatAlias,
+  NumberFormats,
+  Translation,
+  TranslationKey,
+} from './index'
 import type { ISOLanguage } from './iso-639'
 
 /* ===== TRANSLATOR INTERFACE =============================================== */
@@ -75,47 +84,22 @@ export interface Translator {
   tc(key: TranslationKey | Translation, n: number, params?: TranslationParams): string
 
   /**
-   * Format a number into a string according to the current language.
+   * Format a number according to the current language.
    *
-   * If the `currency` parameter is set, the number will be formatted as a
-   * currency value, using the specified currency symbol.
+   * When `format` is provided, it will be used to configure the number format.
+   * This can be one of the aliases specified at initialization, or a
+   * fully-fledged `Intl.NumberFormatOptions` object.
    */
-  n(value?: number | bigint | null | undefined, currency?: string): string
+  n(value?: number | bigint | null | undefined, format?: NumberFormatAlias | Intl.NumberFormatOptions): string
 
   /**
-   * Format a number into a string according to the current language.
+   * Format date and time according to the current language.
    *
-   * When `format` is provided, it will be used to configure the number format,
-   * otherwise the default `format.numberFormat` plugin option will be used.
+   * When `format` is provided, it will be used to configure the date and time
+   * format. This can be one of the aliases specified at initialization, or a
+   * fully-fledged `Intl.DateTimeFormatOptions` object.
    */
-  n(value?: number | bigint | null | undefined, format?: Intl.NumberFormatOptions): string
-
-  d: {
-    /**
-     * Format date and time according to the current language.
-     *
-     * When `style` is provided, it will be used to configure the date and time
-     * format, otherwise the default `format.dateTimeFormat` plugin option will
-     * be used.
-     */
-    (date?: DateInput, style?: DateTimeFormats['dateTimeFormat']): string
-    /**
-     * Format the date part (without time) according to the current language.
-     *
-     * When `style` is provided, it will be used to configure the date and time
-     * format, otherwise the default `format.dateOnlyFormat` plugin option will
-     * be used.
-     */
-    date(date?: DateInput, style?: DateTimeFormats['dateOnlyFormat']): string
-    /**
-     * Format the time part (without date) according to the current language.
-     *
-     * When `style` is provided, it will be used to configure the date and time
-     * format, otherwise the default `format.timeOnlyFormat` plugin option will
-     * be used.
-     */
-    time(date?: DateInput, style?: DateTimeFormats['timeOnlyFormat']): string
-  }
+  d(date?: DateInput, format?: DateTimeFormatAlias | Intl.DateTimeFormatOptions): string
 }
 
 /* ===== TRANSLATOR IMPLEMENTATION ========================================== */
@@ -133,12 +117,42 @@ export function makeTranslator(options: I18nOptions): Translator {
       defaultLocale.language
 
   const translations: InternalTranslations = options.translations ? structuredClone(options.translations) : {}
-  const {
-    dateOnlyFormat = { dateStyle: 'medium' },
-    timeOnlyFormat = { timeStyle: 'medium' },
-    dateTimeFormat = { dateStyle: 'medium', timeStyle: 'medium' },
-    numberFormat = {},
-  } = options.formats || {}
+  const dateTimeFormats: DateTimeFormats = {
+    default: { dateStyle: 'medium', timeStyle: 'medium' },
+    short: { dateStyle: 'short', timeStyle: 'short' },
+    medium: { dateStyle: 'medium', timeStyle: 'medium' },
+    long: { dateStyle: 'long', timeStyle: 'long' },
+    full: { dateStyle: 'full', timeStyle: 'full' },
+
+    // date only formats
+    date: { dateStyle: 'medium' },
+    shortDate: { dateStyle: 'short' },
+    mediumDate: { dateStyle: 'medium' },
+    longDate: { dateStyle: 'long' },
+    fullDate: { dateStyle: 'full' },
+
+    // time only formats
+    time: { timeStyle: 'medium' },
+    shortTime: { timeStyle: 'short' },
+    mediumTime: { timeStyle: 'medium' },
+    longTime: { timeStyle: 'long' },
+    fullTime: { timeStyle: 'full' },
+
+    // overrides and custom formats
+    ...options.dateTimeFormats,
+  }
+
+  const numberFormats: NumberFormats = {
+    // Expand all currency codes into number formats for currencies
+    ...Intl.supportedValuesOf('currency').reduce((formats, currency) => {
+      formats[currency] = { style: 'currency', currency }
+      return formats
+    }, {} as Record<string, Intl.NumberFormatOptions>),
+    // Add the default number format
+    default: {},
+    // Overrides and custom formats
+    ...options.numberFormats,
+  }
 
   // Current locale, from the browser's language settings
   const locale = shallowRef(new Intl.Locale(defaultLanguage))
@@ -151,27 +165,6 @@ export function makeTranslator(options: I18nOptions): Translator {
     if (language !== defaultLanguage) order.push(defaultLanguage)
     return order as any as LanguageKeys
   })
-
-  // Date-time translator, from the current locale
-  function dateTime(input?: DateInput, style = dateTimeFormat): string {
-    if ((input == null) || (input === '')) return ''
-
-    const date = input instanceof Date ? input : new Date(input)
-    const options = typeof style === 'string' ? { dateStyle: style, timeStyle: style } : style
-    return new Intl.DateTimeFormat(locale.value, options).format(date)
-  }
-
-  // Date-only translator, from the current locale
-  function dateOnly(input?: DateInput, style = dateOnlyFormat): string {
-    const options = typeof style === 'string' ? { dateStyle: style } : style
-    return dateTime(input, options)
-  }
-
-  // Time-only translator, from the current locale
-  function timeOnly(input?: DateInput, style = timeOnlyFormat): string {
-    const options = typeof style === 'string' ? { timeStyle: style } : style
-    return dateTime(input, options)
-  }
 
   // The translator object (non-reactive)
   const translator = {
@@ -199,15 +192,13 @@ export function makeTranslator(options: I18nOptions): Translator {
       translator.locale = new Intl.Locale(translator.language, { ...translator.locale, region: value || undefined })
     },
 
-    n(value?: number | bigint | null | undefined, currencyOrOptions?: string | Intl.NumberFormatOptions): string {
+    n(value?: number | bigint | null | undefined, format: string | Intl.NumberFormatOptions = 'default'): string {
       if (value == null) return '' // null or undefined produces an empty string
-      if (typeof currencyOrOptions === 'string') {
-        const currency = currencyOrOptions
-        return new Intl.NumberFormat(translator.locale, { style: 'currency', currency }).format(value)
-      } else {
-        const options = currencyOrOptions || numberFormat
-        return new Intl.NumberFormat(translator.locale, options).format(value)
-      }
+
+      const options = typeof format === 'string' ? numberFormats[format] : format
+      if (! options) warn(`NumberFormat alias "${format}" not found`)
+
+      return new Intl.NumberFormat(translator.locale, options).format(value)
     },
 
     t(translation: TranslationKey | Translation, params?: TranslationParams): string {
@@ -216,11 +207,19 @@ export function makeTranslator(options: I18nOptions): Translator {
 
     tc(translation: TranslationKey | Translation, n: number, params?: TranslationParams): string {
       const template = getTemplate(translations, translation, languages.value)
-      const format = new Intl.NumberFormat(translator.locale, numberFormat)
+      const format = new Intl.NumberFormat(translator.locale, numberFormats['default'])
       return replaceParams(template, Object.assign({ n }, params), format)
     },
 
-    d: Object.assign(dateTime, { date: dateOnly, time: timeOnly }),
+    d(input?: DateInput, format: DateTimeFormatAlias | Intl.DateTimeFormatOptions = 'default'): string {
+      if ((input == null) || (input === '')) return ''
+
+      const date = input instanceof Date ? input : new Date(input)
+      const options = typeof format === 'string' ? dateTimeFormats[format] : format
+      if (! options) warn(`DateTimeFormat alias "${format}" not found`)
+
+      return new Intl.DateTimeFormat(locale.value, options).format(date)
+    },
   } as const satisfies Translator
 
   // Return a reactive version of the translator
