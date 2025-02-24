@@ -9,6 +9,10 @@ import type { Translator } from './translator'
 
 /* ===== REFERENCE LANGUAGES AND COUNTRIES ================================== */
 
+export { ISO_COUNTRIES } from './iso-3166'
+export { ISO_CURRENCIES } from './iso-4217'
+export { ISO_LANGUAGES } from './iso-639'
+
 export type * from './iso-3166'
 export type * from './iso-639'
 

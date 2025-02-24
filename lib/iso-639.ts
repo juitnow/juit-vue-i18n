@@ -1,3 +1,13 @@
+/** The array of all known ISO-639-1 languages */
+export const ISO_LANGUAGES = [
+  ...('aaabaeafakamanarasavayazbabebgbhbibmbnbobrbscacechcocrcscucvcydadedvdz' +
+  'eeeleneoeseteufafffifjfofrfygagdglgngugvhahehihohrhthuhyhziaidieigiiikiois' +
+  'itiujajvkakgkikjkkklkmknkokrkskukvkwkylalblglilnloltlulvmgmhmimkmlmnmrmsmt' +
+  'mynanbndnengnlnnnonrnvnyocojomorospapiplpsptqurmrnrorurwsascsdsesgsiskslsm' +
+  'snsosqsrssstsusvswtatetgthtitktltntotrtstttwtyugukuruzvevivowawoxhyiyozazh' +
+  'zu').match(/../g)!,
+].sort() as ISOLanguage[]
+
 /** All known ISO-639-1 languages and their name */
 export type ISOLanguages = {
   aa: 'Afar',

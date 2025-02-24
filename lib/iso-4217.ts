@@ -1,3 +1,6 @@
+/** The array of all known ISO-639-1 languages */
+export const ISO_CURRENCIES = Intl.supportedValuesOf('currency') as ISOCurrency[]
+
 /** All known ISO-4217 currencies and their name */
 export type ISOCurrencies = {
   AED: 'United Arab Emirates Dirham',
