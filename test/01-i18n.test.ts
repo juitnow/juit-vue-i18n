@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import { ISO_COUNTRIES, ISO_LANGUAGES } from '../lib'
 import { makeTranslator } from '../lib/translator'
-import countries from './data/iso_3166-1.json'
-import languages from './data/iso_639-1.json'
+import countries from './data/iso_3166-1.json' assert { type: 'json' }
+import languages from './data/iso_639-1.json' assert { type: 'json' }
 
 import type { Translator } from '../lib/translator'
 
