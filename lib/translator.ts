@@ -1,15 +1,10 @@
 import { computed, reactive, shallowRef, warn, watch } from 'vue'
 
-import type {
-  DateTimeFormatAlias,
-  DateTimeFormats,
-  I18nOptions,
-  ISOCountry,
-  NumberFormatAlias,
-  NumberFormats,
-  Translation,
-  TranslationKey,
-} from './index'
+import { ISO_COUNTRIES } from './iso-3166'
+import { ISO_CURRENCIES } from './iso-4217'
+import { ISO_LANGUAGES } from './iso-639'
+
+import type { DateTimeFormatAlias, DateTimeFormats, I18nOptions, ISOCountry, NumberFormatAlias, NumberFormats, Translation, TranslationKey } from './index'
 import type { ISOLanguage } from './iso-639'
 
 /* ===== TRANSLATOR INTERFACE =============================================== */
@@ -100,30 +95,39 @@ export interface Translator {
    * fully-fledged `Intl.DateTimeFormatOptions` object.
    */
   d(date?: DateInput, format?: DateTimeFormatAlias | Intl.DateTimeFormatOptions): string
+
+  /** Extra internationalization utilities */
+  utils: {
+    /**
+     * Return the name of the language for the given ISO-639-1 code localized
+     * using the current language
+     */
+    language(code: ISOLanguage): string
+
+    /**
+     * Return the name of the country (or region) for the given ISO-3166-1 code
+     * (or CLDR region code) using the current language
+     */
+    country(code: ISOCountry | 'EU' | 'UN'): string
+
+    /**
+     * Return the flag emoji for the given ISO-3166-1 code (or CLDR region
+     * code).
+     */
+    flag(code: ISOCountry | 'EU' | 'UN'): string
+  }
 }
 
 /* ===== TRANSLATOR IMPLEMENTATION ========================================== */
 
 function checkLocale(locale: Intl.Locale): void {
-  let languageString: string | undefined
-  try {
-    languageString = new Intl.DisplayNames('en-US', { type: 'language' }).of(locale.language)
-  /* v8 ignore next */
-  } catch { /* */ }
-
-  if ((! languageString) || (languageString === locale.language)) {
+  if (! ISO_LANGUAGES.includes(locale.language as any)) {
     warn(`Unknown language code "${locale.language}"`)
   }
 
   if (! locale.region) return
 
-  let regionString: string | undefined
-  try {
-    regionString = new Intl.DisplayNames('en-US', { type: 'region' }).of(locale.region)
-  /* v8 ignore next */
-  } catch { /* */ }
-
-  if ((! regionString) || (regionString === 'Unknown Region') || (regionString === locale.region)) {
+  if (! ISO_COUNTRIES.includes(locale.region as any)) {
     warn(`Unknown region code "${locale.region}"`)
   }
 }
@@ -168,7 +172,7 @@ export function makeTranslator(options: I18nOptions): Translator {
 
   const numberFormats: NumberFormats = {
     // Expand all currency codes into number formats for currencies
-    ...Intl.supportedValuesOf('currency').reduce((formats, currency) => {
+    ...ISO_CURRENCIES.reduce((formats, currency) => {
       formats[currency] = { style: 'currency', currency }
       return formats
     }, {} as Record<string, Intl.NumberFormatOptions>),
@@ -245,6 +249,22 @@ export function makeTranslator(options: I18nOptions): Translator {
       if (! options) warn(`DateTimeFormat alias "${format}" not found`)
 
       return new Intl.DateTimeFormat(locale.value, options).format(date)
+    },
+
+    utils: {
+      language(code: ISOLanguage): string {
+        return new Intl.DisplayNames(translator.locale, { type: 'language' }).of(code)!
+      },
+      country(code: ISOCountry | 'EU' | 'UN'): string {
+        return new Intl.DisplayNames(translator.locale, { type: 'region' }).of(code)!
+      },
+      flag(code: ISOCountry | 'EU' | 'UN'): string {
+        return [ ...code ]
+            .map((c) => c.codePointAt(0)!)
+            .map((n) => 0x1f1a5 + n)
+            .map((n) => String.fromCodePoint(n))
+            .join('')
+      },
     },
   } as const satisfies Translator
 

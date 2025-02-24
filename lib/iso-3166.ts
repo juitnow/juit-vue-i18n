@@ -1,3 +1,14 @@
+/** The array of all known ISO-3166-1 countries */
+export const ISO_COUNTRIES = [
+  ...('ADAEAFAGAIALAMAOAQARASATAUAWAXAZBABBBDBEBFBGBHBIBJBLBMBNBOBQBRBSBTBVBW' +
+  'BYBZCACCCDCFCGCHCICKCLCMCNCOCRCUCVCWCXCYCZDEDJDKDMDODZECEEEGEHERESETFIFJFK' +
+  'FMFOFRGAGBGDGEGFGGGHGIGLGMGNGPGQGRGSGTGUGWGYHKHMHNHRHTHUIDIEILIMINIOIQIRIS' +
+  'ITJEJMJOJPKEKGKHKIKMKNKPKRKWKYKZLALBLCLILKLRLSLTLULVLYMAMCMDMEMFMGMHMKMLMM' +
+  'MNMOMPMQMRMSMTMUMVMWMXMYMZNANCNENFNGNINLNONPNRNUNZOMPAPEPFPGPHPKPLPMPNPRPS' +
+  'PTPWPYQARERORSRURWSASBSCSDSESGSHSISJSKSLSMSNSOSRSSSTSVSXSYSZTCTDTFTGTHTJTK' +
+  'TLTMTNTOTRTTTVTWTZUAUGUMUSUYUZVAVCVEVGVIVNVUWFWSXKYEYTZAZMZW').match(/../g)!,
+].sort() as ISOCountry[]
+
 /** All known ISO-3166-1 countries and their names */
 export type ISOCountries = {
   AD: 'Andorra',
@@ -39,6 +50,7 @@ export type ISOCountries = {
   BZ: 'Belize',
   CA: 'Canada',
   CC: 'Cocos (Keeling) Islands',
+  CD: 'Congo - Kinshasa',
   CF: 'Central African Republic',
   CG: 'Congo - Brazzaville',
   CH: 'Switzerland',
@@ -243,6 +255,7 @@ export type ISOCountries = {
   VU: 'Vanuatu',
   WF: 'Wallis & Futuna',
   WS: 'Samoa',
+  XK: 'Kosovo', // not an official ISO-3166-1 country, but specified in CLDR
   YE: 'Yemen',
   YT: 'Mayotte',
   ZA: 'South Africa',
