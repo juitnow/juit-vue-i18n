@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
+import { ISO_COUNTRIES, ISO_LANGUAGES } from '../lib'
 import { makeTranslator } from '../lib/translator'
+import countries from './data/iso_3166-1.json'
+import languages from './data/iso_639-1.json'
 
 import type { Translator } from '../lib/translator'
 
@@ -433,6 +436,47 @@ describe('I18N Plugin', () => {
     it('should warn when the number format is invalid', () => {
       const translator = makeTranslator({ defaultLanguage: 'en' })
       expect(translator.n(1234.56, 'bogus')).toBeTypeOf('string')
+    })
+  })
+
+  describe('Static data', () => {
+    it('should export the array of all known ISO-3166-1 countries', () => {
+      expect(ISO_COUNTRIES).toEqual(Object.keys(countries).sort())
+    })
+
+    it('should export the array of all known ISO-639-1 languages', () => {
+      expect(ISO_LANGUAGES).toEqual(Object.keys(languages).sort())
+    })
+
+    it('should return valid country names for each of our countries', () => {
+      const translator = makeTranslator({ defaultLanguage: 'en' })
+      for (const country of [ ...ISO_COUNTRIES, 'EU', 'UN' ] as const) {
+        const value = translator.utils.country(country)
+        expect(value).toBeTypeOf('string')
+        expect(value.length, `Code: ${country}`).toBeGreaterThan(2) // no codes
+      }
+    })
+
+    it('should return valid language names for each of our language', () => {
+      const translator = makeTranslator({ defaultLanguage: 'en' })
+      for (const language of ISO_LANGUAGES) {
+        const value = translator.utils.language(language)
+        expect(value, `Code: ${language}`).toBeTypeOf('string')
+        expect(value.length, `Code: ${language}`).toBeGreaterThan(2) // no codes
+      }
+    })
+
+    it('should return valid flags for each of our countries', () => {
+      const translator = makeTranslator({ defaultLanguage: 'en' })
+      for (const country of [ ...ISO_COUNTRIES, 'EU', 'UN' ] as const) {
+        const value = translator.utils.flag(country)
+        expect(value, `Code: ${country}`).toBeTypeOf('string')
+        expect(value.length, `Code: ${country}`).toEqual(4) // 2 codepoints
+        expect([
+          String.fromCharCode(value.codePointAt(0)! - 0x1f1a5),
+          String.fromCharCode(value.codePointAt(2)! - 0x1f1a5),
+        ].join('')).toEqual(country)
+      }
     })
   })
 })
