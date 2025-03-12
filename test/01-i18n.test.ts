@@ -226,6 +226,42 @@ describe('I18N Plugin', () => {
     })).toBe('Samstag, 14.02.2009, 00:31:30 Mitteleuropäische Normalzeit')
   })
 
+  it('should format ad date honoring the default time zone', () => {
+    const translator = makeTranslator({
+      defaultLanguage: 'en-GB',
+      defaultTimeZone: 'UTC',
+    })
+
+    const date = new Date(1234567890123)
+
+    const result1 = translator.d(date, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      fractionalSecondDigits: 3,
+      timeZoneName: 'longOffset',
+    })
+    expect(result1).toEqual('13/02/2009, 23:31:30.123 GMT')
+
+    const result2 = translator.d(date, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      fractionalSecondDigits: 3,
+      timeZoneName: 'longOffset',
+      timeZone: 'America/New_York',
+    })
+    expect(result2).toEqual('13/02/2009, 18:31:30.123 GMT-05:00')
+  })
+
   it('should format a number in various languages with object formats', (context) => {
     if (!translator) return context.skip()
 
