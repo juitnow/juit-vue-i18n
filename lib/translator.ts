@@ -49,7 +49,7 @@ export interface Translator {
   /** The region (if any) used by thus translator to localize translations. */
   region: ISOCountry | undefined
   /** The `Locale` used by this translator (merges `language` and `region`) */
-  locale: Intl.Locale
+  locale: Readonly<Intl.Locale>
 
   /**
    * Return the (possibly parameterized) translation for the specified message
