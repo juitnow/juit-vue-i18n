@@ -302,8 +302,9 @@ const dateTime = translator.d(new Date(), 'time') // e.g. '18:08:05' in de-DE
 A full [`Intl.DateTimeFormatOptions`][5] set of options can also be specified
 as a second parameter to fine-tune the formatting.
 
-The third parameter, if specified, can be used to override the default time
-zone when formatting:
+The third parameter, if specified, can be used to force the time zone used
+when formatting the date. This is useful when time zones are specified in
+the definition of date format _aliases_ (see above):
 
 ```typescript
 import { useTranslator } from '@juit/vue-i18n'
