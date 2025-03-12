@@ -260,6 +260,25 @@ describe('I18N Plugin', () => {
       timeZone: 'America/New_York',
     })
     expect(result2).toEqual('13/02/2009, 18:31:30.123 GMT-05:00')
+
+    const result3 = translator.d(date, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      fractionalSecondDigits: 3,
+      timeZoneName: 'longOffset',
+    }, 'Asia/Tokyo')
+    expect(result3).toEqual('14/02/2009, 08:31:30.123 GMT+09:00')
+
+    const result4 = translator.d(date, 'full')
+    expect(result4).toEqual('Friday, 13 February 2009 at 23:31:30 Coordinated Universal Time')
+
+    const result5 = translator.d(date, 'full', 'Pacific/Auckland')
+    expect(result5).toEqual('Saturday, 14 February 2009 at 12:31:30 New Zealand Daylight Time')
   })
 
   it('should format a number in various languages with object formats', (context) => {
