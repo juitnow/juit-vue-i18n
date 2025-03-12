@@ -57,8 +57,10 @@ const app = createApp(MyApp).use(i18n, {
 The plugin can be configured with a simple string (the `defaultLanguage`)
 described below, or some options:
 
-* `defaultLanguage`: the default language to use; all translations should be
-                     available in this language.
+* `defaultLanguage`: **(required)** the default language to use; all
+                     translations should be available in this language.
+* `defaultTimeZone`: the default time zone to use when formatting dates
+                     (defaults to the _local_ time zone).
 * `translations`: an object containing the translations for the messages to
                   translate, keyed by its identifier.
 * `dateTimeFormats`: date and time format aliases used formatting dates.
