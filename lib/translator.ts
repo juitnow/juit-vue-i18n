@@ -94,7 +94,7 @@ export interface Translator {
    * format. This can be one of the aliases specified at initialization, or a
    * fully-fledged `Intl.DateTimeFormatOptions` object.
    */
-  d(date?: DateInput, format?: DateTimeFormatAlias | Intl.DateTimeFormatOptions): string
+  d(date?: DateInput, format?: DateTimeFormatAlias | Intl.DateTimeFormatOptions, timeZone?: string): string
 
   /** Extra internationalization utilities */
   utils: {
@@ -145,7 +145,7 @@ export function makeTranslator(options: I18nOptions): Translator {
       defaultLocale.language
 
   // Default time zone
-  const timeZone = options.defaultTimeZone
+  const defaultTimeZone = options.defaultTimeZone
 
   const translations: InternalTranslations = options.translations ? structuredClone(options.translations) : {}
   const dateTimeFormats: DateTimeFormats = {
@@ -244,7 +244,7 @@ export function makeTranslator(options: I18nOptions): Translator {
       return replaceParams(template, Object.assign({ n }, params), format)
     },
 
-    d(input?: DateInput, format: DateTimeFormatAlias | Intl.DateTimeFormatOptions = 'default'): string {
+    d(input?: DateInput, format: DateTimeFormatAlias | Intl.DateTimeFormatOptions = 'default', timeZone?: string): string {
       if ((input == null) || (input === '')) return ''
 
       const date = input instanceof Date ? input : new Date(input)
@@ -252,7 +252,7 @@ export function makeTranslator(options: I18nOptions): Translator {
       if (! options) warn(`DateTimeFormat alias "${format}" not found`)
 
       // Merge the default time zone with the options
-      const optionsWithTimeZone = { timeZone, ...options }
+      const optionsWithTimeZone = { timeZone: timeZone || defaultTimeZone, ...options }
 
       // Format our date, optionally defaulting the time zone
       return new Intl.DateTimeFormat(locale.value, optionsWithTimeZone).format(date)

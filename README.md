@@ -302,6 +302,19 @@ const dateTime = translator.d(new Date(), 'time') // e.g. '18:08:05' in de-DE
 A full [`Intl.DateTimeFormatOptions`][5] set of options can also be specified
 as a second parameter to fine-tune the formatting.
 
+The third parameter, if specified, can be used to override the default time
+zone when formatting:
+
+```typescript
+import { useTranslator } from '@juit/vue-i18n'
+
+const translator = useTranslator()
+
+translator.d(new Date(), 'full', 'Europe/Berlin')
+// e.g. Monday, 3 February 2025 at 18:08:03 Central European Standard Time
+```
+
+
 
 ## Configuring Types
 
