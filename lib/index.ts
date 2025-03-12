@@ -222,6 +222,7 @@ export type DefaultLanguage = ISOLanguage | `${ISOLanguage}-${string}` | Intl.Lo
 /** Options to initialize the I18n plugin */
 export interface I18nOptions {
   defaultLanguage: DefaultLanguage,
+  defaultTimeZone?: string,
   translations?: Translations,
   dateTimeFormats?: DateTimeFormats,
   numberFormats?: NumberFormats,

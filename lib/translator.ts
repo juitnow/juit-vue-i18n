@@ -144,6 +144,9 @@ export function makeTranslator(options: I18nOptions): Translator {
       `${defaultLocale.language}-${defaultLocale.region}` :
       defaultLocale.language
 
+  // Default time zone
+  const timeZone = options.defaultTimeZone
+
   const translations: InternalTranslations = options.translations ? structuredClone(options.translations) : {}
   const dateTimeFormats: DateTimeFormats = {
     default: { dateStyle: 'medium', timeStyle: 'medium' },
@@ -248,7 +251,11 @@ export function makeTranslator(options: I18nOptions): Translator {
       const options = typeof format === 'string' ? dateTimeFormats[format] : format
       if (! options) warn(`DateTimeFormat alias "${format}" not found`)
 
-      return new Intl.DateTimeFormat(locale.value, options).format(date)
+      // Merge the default time zone with the options
+      const optionsWithTimeZone = { timeZone, ...options }
+
+      // Format our date, optionally defaulting the time zone
+      return new Intl.DateTimeFormat(locale.value, optionsWithTimeZone).format(date)
     },
 
     utils: {
