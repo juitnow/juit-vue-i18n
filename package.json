@@ -1,6 +1,6 @@
 {
   "name": "@juit/vue-i18n",
-  "version": "0.2.18",
+  "version": "0.2.19",
   "type": "module",
   "exports": {
     ".": {
@@ -15,10 +15,10 @@
     "test": "vitest run --coverage"
   },
   "peerDependencies": {
-    "vue": "^3.5.14"
+    "vue": "^3.5.16"
   },
   "devDependencies": {
-    "@plugjs/eslint-plugin": "^0.3.25",
+    "@plugjs/eslint-plugin": "^0.3.26",
     "@types/node": "<21",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vitest/coverage-v8": "^3.1.4",
@@ -30,7 +30,7 @@
     "vite": "^6.3.5",
     "vite-plugin-dts": "^4.5.4",
     "vitest": "^3.1.4",
-    "vue": "^3.5.14",
+    "vue": "^3.5.16",
     "vue-tsc": "^2.2.10"
   },
   "author": "Juit Developers <developers@juit.com>",
