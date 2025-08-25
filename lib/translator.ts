@@ -136,13 +136,13 @@ function checkLocale(locale: Intl.Locale): void {
 export function makeTranslator(options: I18nOptions): Translator {
   // Default locale, parsing the default language
   const defaultLocale: Intl.Locale = typeof options.defaultLanguage === 'string' ?
-      new Intl.Locale(options.defaultLanguage) :
-      options.defaultLanguage
+    new Intl.Locale(options.defaultLanguage) :
+    options.defaultLanguage
 
   // Normalized default language (language-REGION)
   const defaultLanguage = defaultLocale.region ?
-      `${defaultLocale.language}-${defaultLocale.region}` :
-      defaultLocale.language
+    `${defaultLocale.language}-${defaultLocale.region}` :
+    defaultLocale.language
 
   // Default time zone
   const defaultTimeZone = options.defaultTimeZone
@@ -380,8 +380,8 @@ function replaceParams(
   // Select the template to use based on the "n" (number) parameter
   const n = typeof params.n === 'string' ? Number(params.n) : params.n
   let formatted = n === 0 ? template.zero :
-                  n === 1 ? template.singular :
-                  template.plural
+    n === 1 ? template.singular :
+    template.plural
 
   // Replace any property `{ prop }` with the associated value
   for (const [ prop, value ] of Object.entries(params)) {

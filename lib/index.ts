@@ -236,7 +236,7 @@ const injectionSymbol = Symbol.for('@juit/vue-i18n/translator')
 /** Initialize the translation system plugin */
 export function i18n(app: App, optionsOrLanguage: Language | I18nOptions): App {
   const options = typeof optionsOrLanguage === 'string' ?
-      { defaultLanguage: optionsOrLanguage } : optionsOrLanguage
+    { defaultLanguage: optionsOrLanguage } : optionsOrLanguage
 
   const translator = makeTranslator(options)
 
