@@ -16,6 +16,7 @@ required translation languages and translation keys.
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
+  - [Switching language](#switching-language)
 - [Translating messages](#translating-messages)
   - [Parameterizing translations](#parameterizing-translations)
   - [Pluralization](#pluralization)
@@ -156,6 +157,25 @@ import { useTranslator } from '@juit/vue-i18n'
 
 const translator = useTranslator()
 ```
+
+### Switching language
+
+To switch language, simply set the `language`, `region` or `locale` properties
+on the translator instance:
+
+```typescript
+import { useTranslator } from '@juit/vue-i18n'
+
+const translator = useTranslator() // assuming the default locale is "en-US"
+
+translator.region = 'CA'   // we have switched to Canada, and locale is now "en-CA"
+translator.language = 'fr' // we have switched to French, and locale is now "fr-CA"
+
+// or set the full `locale`
+translator.locale = new Intl.Locale('de-AT')
+```
+
+Because of reactivity, all translations will be updated to the new locale.
 
 
 ## Translating messages

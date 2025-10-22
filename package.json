@@ -1,6 +1,6 @@
 {
   "name": "@juit/vue-i18n",
-  "version": "0.2.34",
+  "version": "0.2.35",
   "type": "module",
   "exports": {
     ".": {
