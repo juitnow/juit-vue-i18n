@@ -1,6 +1,4 @@
-import { describe } from 'node:test'
-
-import { expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createApp, nextTick } from 'vue'
 
 import { i18n, useTranslator } from '../lib'
