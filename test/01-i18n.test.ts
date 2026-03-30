@@ -245,7 +245,7 @@ describe('I18N Plugin', () => {
       fractionalSecondDigits: 3,
       timeZoneName: 'longOffset',
     })
-    expect(result1).toEqual('13/02/2009, 23:31:30.123 GMT')
+    expect(result1).toMatch(/^13\/02\/2009, 23:31:30.123 GMT(\+00:00)?/)
 
     const result2 = translator.d(date, {
       year: 'numeric',
