@@ -1,11 +1,11 @@
 import vue from '@vitejs/plugin-vue'
-import dts from 'vite-plugin-dts'
+import dts from 'unplugin-dts/vite'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [ vue(), dts({
     tsconfigPath: './tsconfig.app.json',
-    rollupTypes: true,
+    bundleTypes: true,
   }) ],
 
   build: {
