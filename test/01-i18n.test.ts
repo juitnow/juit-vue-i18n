@@ -2,10 +2,19 @@ import { describe, expect, it } from 'vitest'
 
 import { ISO_COUNTRIES, ISO_LANGUAGES } from '../lib'
 import { makeTranslator } from '../lib/translator'
-import countries from './data/iso_3166-1.json' assert { type: 'json' }
-import languages from './data/iso_639-1.json' assert { type: 'json' }
+import countries from './data/iso_3166-1.json' with { type: 'json' }
+import languages from './data/iso_639-1.json' with { type: 'json' }
 
 import type { Translator } from '../lib/translator'
+
+declare module '../lib/index' {
+  export interface I18nConfiguration {
+    languages: 'de' | 'en',
+    translationKeys: 'hello' | 'cats',
+    // dateTimeFormats: keyof typeof dateTimeFormats,
+    // numberFormats: keyof typeof numberFormats,
+  }
+}
 
 describe('I18N Plugin', () => {
   let translator: Translator
@@ -470,17 +479,17 @@ describe('I18N Plugin', () => {
 
     it('should fail when translating an empty key', () => {
       const translator = makeTranslator({ defaultLanguage: 'en' })
-      expect(() => translator.t('')).toThrow('No translation key specified')
+      expect(() => translator.t('' as any)).toThrow('No translation key specified')
     })
 
     it('should warn when translating a missing translation', () => {
       const translator = makeTranslator({ defaultLanguage: 'en' })
-      expect(translator.t('flipper')).toBe('flipper')
+      expect(translator.t('flipper' as any)).toBe('flipper')
     })
 
     it('should warn when missing the default language', () => {
       const translator = makeTranslator({ defaultLanguage: 'en' })
-      expect(translator.t({ de: 'flipper' })).toBe('')
+      expect(translator.t({ de: 'flipper' } as any)).toBe('')
     })
 
     it('should warn when the date time format is invalid', () => {
@@ -532,6 +541,48 @@ describe('I18N Plugin', () => {
           String.fromCharCode(value.codePointAt(2)! - 0x1f1a5),
         ].join('')).toEqual(country)
       }
+    })
+
+    it('should update translations', () => {
+      const translator = makeTranslator({
+        defaultLanguage: 'en',
+        translations: {
+          hello: {
+            'en': 'Hello, World!',
+            'de': 'Hallo, Welt!',
+          },
+        },
+      })
+
+      translator.language = 'en'
+      expect(translator.t('hello')).toEqual('Hello, World!')
+      translator.language = 'de'
+      expect(translator.t('hello')).toEqual('Hallo, Welt!')
+
+      translator.utils.updateTranslations({
+        hello: {
+          en: 'Hello, Again!',
+        },
+      })
+
+      translator.language = 'en'
+      expect(translator.t('hello')).toEqual('Hello, Again!')
+      translator.language = 'de'
+      expect(translator.t('hello')).toEqual('Hallo, Welt!')
+
+      translator.utils.updateTranslations({
+        null: null,
+        undefined: undefined,
+        silly: { en: null },
+        missing: {
+          de: 'No way this existed!',
+        },
+      } as any)
+
+      translator.language = 'en'
+      expect(translator.t('missing' as any)).toEqual('') // empty
+      translator.language = 'de'
+      expect(translator.t('missing' as any)).toEqual('No way this existed!')
     })
   })
 })
