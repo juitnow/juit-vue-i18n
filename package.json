@@ -1,6 +1,6 @@
 {
   "name": "@juit/vue-i18n",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "type": "module",
   "exports": {
     ".": {
@@ -15,7 +15,7 @@
     "test": "vitest run --coverage"
   },
   "peerDependencies": {
-    "vue": "^3.5.41"
+    "vue": "^3.5.40"
   },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.58.12",
