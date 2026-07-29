@@ -115,6 +115,11 @@ export interface Translator {
      * code).
      */
     flag(code: ISOCountry | 'EU' | 'UN'): string
+
+    /**
+     * Update the translations used by this translator.
+     */
+    updateTranslations(translations: Partial<Record<TranslationKey, Partial<Translation>>>): void
   }
 }
 
@@ -272,6 +277,24 @@ export function makeTranslator(options: I18nOptions): Translator {
             .map((n) => 0x1f1a5 + n)
             .map((n) => String.fromCodePoint(n))
             .join('')
+      },
+      updateTranslations(updates: Partial<Record<TranslationKey, Partial<Translation>>>): void {
+        let updated = false
+
+        for (const [ key, translation ] of Object.entries(updates)) {
+          if (! translation) continue
+
+          for (const [ lang, value ] of Object.entries(translation)) {
+            if (! value) continue
+
+            translations[key] ||= {}
+            translations[key][lang] = value
+            updated = true
+          }
+        }
+
+        // Clear the cache for the updated translations
+        if (updated) caches.delete(translations)
       },
     },
   } as const satisfies Translator
