@@ -1,6 +1,6 @@
 {
   "name": "@juit/vue-i18n",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "type": "module",
   "exports": {
     ".": {
@@ -28,7 +28,7 @@
     "jsdom": "^30.0.1",
     "typescript": "<7",
     "unplugin-dts": "^1.0.3",
-    "vite": "^8.1.5",
+    "vite": "^8.2.0",
     "vitest": "^4.1.10",
     "vue": "^3.5.40",
     "vue-tsc": "^3.3.8"
