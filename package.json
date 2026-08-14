@@ -1,6 +1,6 @@
 {
   "name": "@juit/vue-i18n",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "type": "module",
   "exports": {
     ".": {
@@ -19,11 +19,11 @@
   },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.58.12",
-    "@plugjs/eslint-plugin": "^0.7.4",
+    "@plugjs/eslint-plugin": "^0.7.5",
     "@types/node": "<25",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vitest/coverage-v8": "^4.1.10",
-    "eslint": "^10.8.0",
+    "eslint": "^10.8.1",
     "eslint-plugin-vue": "^10.10.0",
     "jsdom": "^30.0.1",
     "typescript": "<7",
