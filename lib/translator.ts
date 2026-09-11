@@ -294,6 +294,7 @@ export function makeTranslator(options: I18nOptions): Translator {
         }
 
         // Clear the cache for the updated translations
+        // istanbul ignore else // no need to clear the cache if no updates made
         if (updated) caches.delete(translations)
       },
     },
