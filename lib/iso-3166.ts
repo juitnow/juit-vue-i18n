@@ -265,3 +265,8 @@ export type ISOCountries = {
 
 /** Array of all known ISO-3166-1 country names */
 export type ISOCountry = keyof ISOCountries
+
+/** Type guard to check if a value is a valid ISO-3166-1 country code */
+export function isISOCountry(value: unknown): value is ISOCountry {
+  return ISO_COUNTRIES.includes(value as ISOCountry)
+}

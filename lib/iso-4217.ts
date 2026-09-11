@@ -166,3 +166,8 @@ export type ISOCurrencies = {
 
 /** All known ISO-4217 currency codes */
 export type ISOCurrency = keyof ISOCurrencies
+
+/** Type guard to check if a value is a valid ISO-4217 currency code */
+export function isISOCurrency(value: unknown): value is ISOCurrency {
+  return ISO_CURRENCIES.includes(value as ISOCurrency)
+}

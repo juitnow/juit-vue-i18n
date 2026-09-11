@@ -198,3 +198,8 @@ export type ISOLanguages = {
 
 /** All known ISO-639-1 language codes */
 export type ISOLanguage = keyof ISOLanguages
+
+/** Type guard to check if a value is a valid ISO-639-1 language code */
+export function isISOLanguage(value: unknown): value is ISOLanguage {
+  return ISO_LANGUAGES.includes(value as ISOLanguage)
+}
