@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { ISO_COUNTRIES, ISO_LANGUAGES } from '../lib'
+import { isISOCountry, isISOCurrency, isISOLanguage, ISO_COUNTRIES, ISO_LANGUAGES } from '../lib'
 import { makeTranslator } from '../lib/translator'
 import countries from './data/iso_3166-1.json' with { type: 'json' }
 import languages from './data/iso_639-1.json' with { type: 'json' }
@@ -512,6 +512,21 @@ describe('I18N Plugin', () => {
       expect(ISO_LANGUAGES).toEqual(Object.keys(languages).sort())
     })
 
+    it('should validate an ISO-3166-1 country code', () => {
+      expect(isISOCountry('US')).toBe(true)
+      expect(isISOCountry('ZZ')).toBe(false)
+    })
+
+    it('should validate an ISO-639-1 language code', () => {
+      expect(isISOLanguage('en')).toBe(true)
+      expect(isISOLanguage('zz')).toBe(false)
+    })
+
+    it('should validate an ISO-4217 currency code', () => {
+      expect(isISOCurrency('EUR')).toBe(true)
+      expect(isISOCurrency('ZZZ')).toBe(false)
+    })
+
     it('should return valid country names for each of our countries', () => {
       const translator = makeTranslator({ defaultLanguage: 'en' })
       for (const country of [ ...ISO_COUNTRIES, 'EU', 'UN' ] as const) {
@@ -542,7 +557,9 @@ describe('I18N Plugin', () => {
         ].join('')).toEqual(country)
       }
     })
+  })
 
+  describe('Translation updates', () => {
     it('should update translations', () => {
       const translator = makeTranslator({
         defaultLanguage: 'en',
