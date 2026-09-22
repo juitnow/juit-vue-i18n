@@ -1,13 +1,15 @@
 Juit I18n for Vue
 =================
 
-The `@juit/vue-i18n` package provides a _minimalistic_ plugin for VueJS (v. 3)
-to support basic internationalization (translations, numbers, and date formats).
+The `@juit/vue-i18n` package provides a _minimal_ plugin for Vue 3
+to support basic internationalization (translations, number formatting, and
+date formatting).
 
-It heavily relies on the [`Intl.Locale`][1], [`Intl.NumberFormat`][2], and
-[`Intl.DateTimeFormat`][3] global objects widely supported by modern browsers.
+It relies heavily on the [`Intl.Locale`][1], [`Intl.NumberFormat`][2], and
+[`Intl.DateTimeFormat`][3] global objects, which are widely supported by modern
+browsers.
 
-It also deeply integrates with TypeScript to provide compile-time checking on
+It also integrates with TypeScript to provide compile-time checks for
 required translation languages and translation keys.
 
 
@@ -29,13 +31,13 @@ required translation languages and translation keys.
 
 ## Installation
 
-As usual, install with NPM (or the cool package-manager du jour):
+As usual, install with npm (or the cool package manager du jour):
 
 ```bash
 npm install '@juit/vue-i18n'
 ```
 
-And add the plugin to your Vue app:
+Then add the plugin to your Vue app:
 
 ```typescript
 import { createApp } from 'vue'
@@ -56,23 +58,23 @@ const app = createApp(MyApp).use(i18n, {
 
 ## Configuration
 
-The plugin can be configured with a simple string (the `defaultLanguage`)
-described below, or some options:
+The plugin can be configured with a language code string (the default
+language) or an object containing the following options:
 
 * `defaultLanguage`: **(required)** the default language to use; all
                      translations should be available in this language.
 * `defaultTimeZone`: the default time zone to use when formatting dates
                      (defaults to the _local_ time zone).
 * `translations`: an object containing the translations for the messages to
-                  translate, keyed by its identifier.
-* `dateTimeFormats`: date and time format aliases used formatting dates.
-* `numberFormats`: number format aliases used formatting numbers.
+                  translate, keyed by message identifier.
+* `dateTimeFormats`: date and time format aliases used when formatting dates.
+* `numberFormats`: number format aliases used when formatting numbers.
 
 
-### Date Time Format Aliases
+### Date and Time Format Aliases
 
-Date time formatting aliases can be configured keyed by a simple string and
-values as [`Intl.DateTimeFormatOptions`][5]
+Date and time format aliases can be configured using string keys and
+[`Intl.DateTimeFormatOptions`][5] values:
 
 ```typescript
 import { createApp } from 'vue'
@@ -94,37 +96,37 @@ const app = createApp(MyApp).use(i18n, {
 The default (overridable) formats are as follows:
 
 ```typescript
- {
-   // used when no alias or date time format is specified
-   default: { dateStyle: 'medium', timeStyle: 'medium' },
+const dateTimeFormats = {
+  // used when no alias or date and time format is specified
+  default: { dateStyle: 'medium', timeStyle: 'medium' },
 
-   // generic formats
-   short: { dateStyle: 'short', timeStyle: 'short' },
-   medium: { dateStyle: 'medium', timeStyle: 'medium' },
-   long: { dateStyle: 'long', timeStyle: 'long' },
-   full: { dateStyle: 'full', timeStyle: 'full' },
+  // generic formats
+  short: { dateStyle: 'short', timeStyle: 'short' },
+  medium: { dateStyle: 'medium', timeStyle: 'medium' },
+  long: { dateStyle: 'long', timeStyle: 'long' },
+  full: { dateStyle: 'full', timeStyle: 'full' },
 
-   // date only formats
-   date: { dateStyle: 'medium' },
-   shortDate: { dateStyle: 'short' },
-   mediumDate: { dateStyle: 'medium' },
-   longDate: { dateStyle: 'long' },
-   fullDate: { dateStyle: 'full' },
+  // date only formats
+  date: { dateStyle: 'medium' },
+  shortDate: { dateStyle: 'short' },
+  mediumDate: { dateStyle: 'medium' },
+  longDate: { dateStyle: 'long' },
+  fullDate: { dateStyle: 'full' },
 
-   // time only formats
-   time: { timeStyle: 'medium' },
-   shortTime: { timeStyle: 'short' },
-   mediumTime: { timeStyle: 'medium' },
-   longTime: { timeStyle: 'long' },
-   fullTime: { timeStyle: 'full' },
+  // time only formats
+  time: { timeStyle: 'medium' },
+  shortTime: { timeStyle: 'short' },
+  mediumTime: { timeStyle: 'medium' },
+  longTime: { timeStyle: 'long' },
+  fullTime: { timeStyle: 'full' },
 }
 ```
 
 
 ### Number Format Aliases
 
-Similarly to date time, also number formatting aliases can be configured keyed
-by a simple string and values as [`Intl.NumberFormatOptions`][4]
+Similarly, number format aliases can be configured using string keys and
+[`Intl.NumberFormatOptions`][4] values:
 
 ```typescript
 import { createApp } from 'vue'
@@ -142,16 +144,16 @@ const app = createApp(MyApp).use(i18n, {
 })
 ```
 
-While there is no intrinsic default, each valid ISO-4217 currency code
-(e.g. `EUR`, `USD`, ...) can be used as an alias.
+By default, numbers use the locale's standard formatting. Each valid ISO 4217
+currency code (e.g. `EUR`, `USD`, ...) can be used as an alias.
 
-To configure the default number format use the `default` key.
+To configure the default number format, use the `default` key.
 
 
 ## Usage
 
-In any component `setup()` method, you can use the `useTranslator()` function
-to get a hold on the `Translator` configured for the current app.
+In any component's `setup()` method, you can use the `useTranslator()` function
+to retrieve the `Translator` configured for the current app.
 
 ```typescript
 import { useTranslator } from '@juit/vue-i18n'
@@ -161,7 +163,7 @@ const translator = useTranslator()
 
 ### Switching language
 
-To switch language, simply set the `language`, `region` or `locale` properties
+To switch languages, simply set the `language`, `region`, or `locale` property
 on the translator instance:
 
 ```typescript
@@ -169,8 +171,8 @@ import { useTranslator } from '@juit/vue-i18n'
 
 const translator = useTranslator() // assuming the default locale is "en-US"
 
-translator.region = 'CA'   // we have switched to Canada, and locale is now "en-CA"
-translator.language = 'fr' // we have switched to French, and locale is now "fr-CA"
+translator.region = 'CA'   // we have switched to Canada, and the locale is now "en-CA"
+translator.language = 'fr' // we have switched to French, and the locale is now "fr-CA"
 
 // or set the full `locale`
 translator.locale = new Intl.Locale('de-AT')
@@ -181,11 +183,11 @@ Because of reactivity, all translations will be updated to the new locale.
 
 ## Translating messages
 
-The base function to translate messages is exposed as `translator.t(...)` or
+The function for translating messages is exposed as `translator.t(...)` or
 (within components) the `$t(...)` function.
 
-This function takes a translation _key_ (specified in the configuration
-phase, see above).
+This function takes a translation _key_ specified during configuration
+(see above).
 
 ```typescript
 import { useTranslator } from '@juit/vue-i18n'
@@ -203,8 +205,8 @@ import { useTranslator } from '@juit/vue-i18n'
 
 const translator = useTranslator()
 
-const panagram = translator.t({
-  en: 'The quick fox jumped over the lazy dog',
+const pangram = translator.t({
+  en: 'The quick brown fox jumps over the lazy dog',
   de: 'Franz jagt im komplett verwahrlosten Taxi quer durch Bayern'
 })
 ```
@@ -219,18 +221,18 @@ For example:
 ```typescript
 const name = 'John Doe'
 
-const string: translator.t({
-  en: 'Your name is {name}'
+const string = translator.t({
+  en: 'Your name is {name}',
   de: 'Ihr Name ist {name}'
 }, { name })
 // This will result in either "Your name is John Doe" or "Ihr Name ist John Doe"
 ```
 
-When parameters are numbers, those will be formatted as numbers:
+Numeric parameters are formatted according to the current locale:
 
 ```typescript
-const string: translator.t({
-  en: 'Score {points} points'
+const string = translator.t({
+  en: 'Score {points} points',
   de: 'Punktestand {points} Punkte'
 }, { points: 1234.56 })
 // This will result in "Score 1,234.56 points" or "Punktestand 1.234,56 Punkte"
@@ -239,33 +241,34 @@ const string: translator.t({
 
 ### Pluralization
 
-The translator supports minimal rules for pluralization by separating
+The translator supports basic pluralization rules by separating
 translation messages with the `|` (pipe) character.
 
-Messages can contain two variants `singular|plural` or three variants
-`zero|singular|plural`, with each variant used when the reference number to
-pluralize is either zero, one, or another number:
+Messages can contain two variants, `singular|plural`, or three variants,
+`zero|singular|plural`. The singular variant is used for one, and the plural
+variant for other numbers. If a zero variant is provided, it is used for zero
+instead of the plural variant.
 
-To contextualize the number, either use the `n` parameter, or use the `tc(...)`
-function which will take, as a second parameter, the reference number.
+To specify the number used for pluralization, either use the `n` parameter
+or pass the number as the second argument to `tc(...)`.
 
 For example:
 
 ```typescript
-const string: translator.t({
-  en: 'no cats | one cat | {n} cats'
+const string = translator.t({
+  en: 'no cats | one cat | {n} cats',
   de: 'keine Katzen | eine Katze | {n} Katzen'
 }, { n })
-// This will result in "no cats" or "keine katzen" when "n" is zero,
+// This will result in "no cats" or "keine Katzen" when "n" is zero,
 // "one cat" or "eine Katze" when "n" is 1, or
 // "1,234.56 cats" or "1.234,56 Katzen" when "n" is 1234.56
 ```
 
-Is equivalent to:
+This is equivalent to:
 
 ```typescript
-const string: translator.tc({
-  en: 'no cats | one cat | {n} cats'
+const string = translator.tc({
+  en: 'no cats | one cat | {n} cats',
   de: 'keine Katzen | eine Katze | {n} Katzen'
 }, n)
 ```
@@ -281,7 +284,7 @@ import { useTranslator } from '@juit/vue-i18n'
 const translator = useTranslator()
 
 const number = translator.n(1234.5)
-// the "number" string will be "1,234.5", "1.234,5" or whatever locale specified
+// the "number" string will be "1,234.5", "1.234,5", etc., depending on the locale
 ```
 
 A currency can be specified as a second parameter for quick formatting:
@@ -292,23 +295,23 @@ import { useTranslator } from '@juit/vue-i18n'
 const translator = useTranslator()
 
 const amount = translator.n(1234.5, 'USD')
-// the "amount" will be "$1,234.5", "1.234,5 $" or whatever locale specified
+// the "amount" string will be "$1,234.50" in en-US
 ```
 
-A full [`Intl.NumberFormatOptions`][4] set of options can also be specified
+An [`Intl.NumberFormatOptions`][4] object can also be specified
 as a second parameter to fine-tune the formatting.
 
-The default format can be specified when configuring the plugin as the
-`formats.numberFormat` option (intentionally, there is no default).
+The default format can be specified using `numberFormats.default` when
+configuring the plugin.
 
 
 ## Formatting dates
 
-The `d(...)` function can be used to format date-and-time values in the current
+The `d(...)` function can be used to format date and time values in the current
 locale.
 
 When the second parameter is a string, it is considered to be one of the
-_aliases_ configured when the plugin is setup.
+_aliases_ configured when the plugin is set up.
 
 ```typescript
 import { useTranslator } from '@juit/vue-i18n'
@@ -317,15 +320,15 @@ const translator = useTranslator()
 
 const dateTime = translator.d(new Date()) // e.g. '03.02.2025, 18:08:05' in de-DE
 const dateOnly = translator.d(new Date(), 'date') // e.g. '03.02.2025' in de-DE
-const dateTime = translator.d(new Date(), 'time') // e.g. '18:08:05' in de-DE
+const timeOnly = translator.d(new Date(), 'time') // e.g. '18:08:05' in de-DE
 ```
 
-A full [`Intl.DateTimeFormatOptions`][5] set of options can also be specified
+An [`Intl.DateTimeFormatOptions`][5] object can also be specified
 as a second parameter to fine-tune the formatting.
 
-The third parameter, if specified, can be used to force the time zone used
+The third parameter, if specified, can be used to override the time zone used
 when formatting the date. This is useful when time zones are specified in
-the definition of date format _aliases_ (see above):
+the definitions of date and time format _aliases_ (see above):
 
 ```typescript
 import { useTranslator } from '@juit/vue-i18n'
@@ -337,17 +340,16 @@ translator.d(new Date(), 'full', 'Europe/Berlin')
 ```
 
 
-
 ## Configuring Types
 
-One of the keys to this package is to provide compile-time safety for all
-translation languages (we don't want to forget to translate a message in
+One of the key features of this package is compile-time safety for all
+translation languages (we don't want to forget to translate a message into
 a new language) and translation keys (we don't want to mistype a translation
 key by accident).
 
 To do so, we can _merge_ the `I18nConfiguration` interface of this package
-with our specific configurations. Two properties are expected to be defined
-in the configuration:
+with our application-specific configuration. The following properties can
+be defined:
 
 * `languages`: the list of supported languages for the application. These
                are ISO 639-1 language codes, and when specified, _every_
@@ -356,9 +358,9 @@ in the configuration:
                      These are the arbitrary keys used to identify the
                      messages to be translated with the `t` and `tc`
                      methods of `Translator`.
-* `dateTimeFormats`: the date and time formats _aliases_ used by the
+* `dateTimeFormats`: the date and time format _aliases_ used by the
                      application.
-* `numberFormats`: the number formats _aliases_ used by the application.
+* `numberFormats`: the number format _aliases_ used by the application.
 
 To configure the types, follow the example below:
 
@@ -404,11 +406,11 @@ const app = createApp(MyApp).use(i18n, {
 In the example above, if any of the translation objects in our app is missing
 a language (either `en` or `de`), TypeScript will complain.
 
-In the same way, if we pass any other string but `hello` to `t(...)` or
-`tc(...)`, TypeScript will report the wrong key.
+In the same way, if we pass any string other than `hello` to `t(...)` or
+`tc(...)`, TypeScript will report an invalid key.
 
-Also, date time format aliases will be augumented using the customizations
-specified in `dateTimeFormats` and `numberFormats`.
+Date, time, and number format alias types will also be augmented using the
+customizations specified in `dateTimeFormats` and `numberFormats`.
 
 
 ## Language Matching
@@ -436,8 +438,8 @@ a non-empty array of codes. The first valid language is the default, used
 whenever no preference matches.
 
 The `match(...)` method accepts a string, an array of strings in preference
-order. It returns the **first supported preference**, regardless of the order
-of the available languages:
+order, `null`, or `undefined`. It returns the **first supported preference**,
+regardless of the order of the available languages:
 
 ```typescript
 matcher.match('de') // 'de'
