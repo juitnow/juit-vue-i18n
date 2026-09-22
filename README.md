@@ -293,6 +293,29 @@ const string = translator.tc({
 ```
 
 
+Messages can also use explicit tuples instead of pipe-delimited strings:
+
+```typescript
+const message = {
+  en: ['no cats', 'one cat', '{n} cats'],
+  de: ['keine Katzen', 'eine Katze', '{n} Katzen'],
+} as const
+
+translator.tc(message, 2) // '2 cats' or '2 Katzen'
+```
+
+A tuple with one element is used for every count. Two elements mean
+`[singular, plural]`, with zero using the plural variant. Three elements mean
+`[zero, singular, plural]`.
+
+Tuple elements still support placeholders and escaped placeholders, but skip
+pipe splitting and pipe unescaping entirely: `['A | B']` displays `A | B`.
+
+Tuples work in base and regional translations, inline messages, and
+`updateTranslations(...)`. They are copied when stored, so changing the
+original array later cannot change stored messages or cached results.
+
+
 ## Formatting numbers
 
 The `n(...)` function can be used to format numbers in the current locale:
