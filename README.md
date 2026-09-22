@@ -17,6 +17,8 @@ required translation languages and translation keys.
 
 - [Installation](#installation)
 - [Configuration](#configuration)
+  - [Date and Time Format Aliases](#date-and-time-format-aliases)
+  - [Number Format Aliases](#number-format-aliases)
 - [Usage](#usage)
   - [Switching language](#switching-language)
 - [Translating messages](#translating-messages)
@@ -25,6 +27,7 @@ required translation languages and translation keys.
 - [Formatting numbers](#formatting-numbers)
 - [Formatting dates](#formatting-dates)
 - [Configuring Types](#configuring-types)
+- [Updating Translations](#updating-translations)
 - [Language Matching](#language-matching)
 - [Legal Stuff](#legal-stuff)
 
@@ -411,6 +414,44 @@ In the same way, if we pass any string other than `hello` to `t(...)` or
 
 Date, time, and number format alias types will also be augmented using the
 customizations specified in `dateTimeFormats` and `numberFormats`.
+
+
+## Updating Translations
+
+Use `translator.utils.updateTranslations(...)` to add or change translations
+after the plugin has been configured, for example when loading messages from
+a server. Pass an object keyed by translation key, with language codes and
+their translated messages as values:
+
+```typescript
+import { useTranslator } from '@juit/vue-i18n'
+
+const translator = useTranslator()
+
+translator.utils.updateTranslations({
+  hello: {
+    en: 'Hello again!',
+  },
+})
+
+translator.language = 'en'
+translator.t('hello') // 'Hello again!'
+```
+
+Updates are merged into the existing translations: only the supplied
+key-language pairs are overwritten. In this example, the German translation
+of `hello` is preserved. New keys and language variants can also be added.
+
+Both translation keys and languages are optional in an update, so you do not
+need to supply every configured language. If you have configured
+`I18nConfiguration`, TypeScript checks the supplied keys and languages against
+those types.
+
+Empty strings and `undefined` values are ignored; they cannot be used to
+delete an existing translation. The method returns nothing and clears the
+translation cache when an update is applied, so subsequent calls to `t(...)`
+and `tc(...)` use the updated messages. Updating translations alone does not
+trigger a Vue component re-render.
 
 
 ## Language Matching
