@@ -252,7 +252,7 @@ export function makeTranslator(options: I18nOptions): Translator {
     tc(translation: TranslationKey | Translation, n: number, params?: TranslationParams): string {
       const template = getTemplate(translations, translation, languages.value)
       const format = new Intl.NumberFormat(translator.locale, numberFormats['default'])
-      return replaceParams(template, Object.assign({ n }, params), format)
+      return replaceParams(template, { n, ...params }, format)
     },
 
     d(input?: DateInput, format: DateTimeFormatAlias | Intl.DateTimeFormatOptions = 'default', timeZone?: string): string {
