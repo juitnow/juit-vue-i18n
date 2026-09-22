@@ -1,5 +1,5 @@
-/** The array of all known ISO-639-1 languages */
-export const ISO_CURRENCIES = Intl.supportedValuesOf('currency') as ISOCurrency[]
+/** The array of ISO-4217 currencies supported by the runtime */
+export const ISO_CURRENCIES = Object.freeze(Intl.supportedValuesOf('currency') as ISOCurrency[])
 
 /** All known ISO-4217 currencies and their name */
 export type ISOCurrencies = {
@@ -126,6 +126,7 @@ export type ISOCurrencies = {
   SEK: 'Swedish Krona',
   SGD: 'Singapore Dollar',
   SHP: 'St. Helena Pound',
+  SLE: 'Sierra Leonean Leone',
   SLL: 'Sierra Leonean Leone (1964—2022)',
   SOS: 'Somali Shilling',
   SRD: 'Surinamese Dollar',
@@ -154,6 +155,7 @@ export type ISOCurrencies = {
   WST: 'Samoan Tala',
   XAF: 'Central African CFA Franc',
   XCD: 'East Caribbean Dollar',
+  XCG: 'Caribbean Guilder',
   XDR: 'Special Drawing Rights',
   XOF: 'West African CFA Franc',
   XPF: 'CFP Franc',
@@ -161,6 +163,7 @@ export type ISOCurrencies = {
   YER: 'Yemeni Rial',
   ZAR: 'South African Rand',
   ZMW: 'Zambian Kwacha',
+  ZWG: 'Zimbabwe Gold',
   ZWL: 'Zimbabwean Dollar (2009)',
 }
 
