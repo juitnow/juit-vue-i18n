@@ -350,6 +350,34 @@ describe('I18N Plugin', () => {
     }
   })
 
+  it('should preserve non-enumerable format getters without modifying caller options', () => {
+    class DateFormat implements Intl.DateTimeFormatOptions {
+      get hour(): '2-digit' {
+        return '2-digit'
+      }
+      get minute(): '2-digit' {
+        return '2-digit'
+      }
+      get timeZone(): string {
+        return 'UTC'
+      }
+    }
+
+    const translator = makeTranslator({ defaultLanguage: 'en-GB' })
+    const date = new Date(1234567890123)
+    const formats = [
+      Object.freeze(new DateFormat()),
+      Object.freeze({ hour: '2-digit', minute: '2-digit', timeZone: 'UTC' } as const),
+    ]
+
+    for (const format of formats) {
+      expect(translator.d(date, format)).toBe('23:31')
+      expect(translator.d(date, format, 'Asia/Tokyo')).toBe('08:31')
+      expect(format.timeZone).toBe('UTC')
+      expect(translator.d(date, format)).toBe('23:31')
+    }
+  })
+
   it('should format a number in various languages with object formats', (context) => {
     if (!translator) return context.skip()
 

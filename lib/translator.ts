@@ -264,7 +264,12 @@ export function makeTranslator(options: I18nOptions): Translator {
 
       // Prefer the explicit time zone, then the format's zone, then the default.
       timeZone = timeZone ?? options?.timeZone ?? defaultTimeZone
-      const optionsWithTimeZone = { ...options, timeZone }
+
+      // Preserve inherited and non-enumerable getters that spreading would lose.
+      // Define our own timeZone to override readonly properties without modifying the caller.
+      const optionsWithTimeZone = Object.create(options ?? null, {
+        timeZone: { value: timeZone, enumerable: true },
+      }) as Intl.DateTimeFormatOptions
 
       // Format our date, optionally defaulting the time zone
       return new Intl.DateTimeFormat(locale.value, optionsWithTimeZone).format(date)
