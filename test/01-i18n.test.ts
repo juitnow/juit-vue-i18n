@@ -5,6 +5,7 @@ import { makeTranslator } from '../lib/translator'
 import countries from './data/iso_3166-1.json' with { type: 'json' }
 import languages from './data/iso_639-1.json' with { type: 'json' }
 
+import type { TranslationMessage } from '../lib'
 import type { Translator } from '../lib/translator'
 
 declare module '../lib/index' {
@@ -599,6 +600,117 @@ describe('I18N Plugin', () => {
       expect(translator.tc(translation, 1)).toBe(count % 2 ? `${singular}| many` : singular)
       expect(translator.tc(translation, 2)).toBe(count % 2 ? `${singular}| many` : 'many')
     }
+  })
+
+  it('should accept readonly translation tuples with one, two, or three variants', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const cases: { message: TranslationMessage, expected: readonly string[] }[] = [
+      { message: [ 'same' ] as const, expected: [ 'same', 'same', 'same' ] },
+      { message: [ 'one', '{n} many' ] as const, expected: [ '0 many', 'one', '2 many' ] },
+      { message: [ 'none', 'one', '{n} many' ] as const, expected: [ 'none', 'one', '2 many' ] },
+    ]
+
+    for (const { message, expected } of cases) {
+      for (const n of [ 0, 1, 2 ]) {
+        expect(translator.tc({ en: message, de: message }, n)).toBe(expected[n])
+      }
+    }
+  })
+
+  it('should keep pipes literal in tuples while parsing placeholders and escapes', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const message = [ 'one | item', String.raw`{n} \| items \{ name }` ] as const
+
+    expect(translator.tc({ en: message, de: message }, 1)).toBe('one | item')
+    expect(translator.tc({ en: message, de: message }, 2, { name: 'ignored' })).toBe(String.raw`2 \| items { name }`)
+  })
+
+  it('should omit trailing undefined tuple slots and preserve empty variants', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const cases: { message: TranslationMessage, expected: readonly string[] }[] = [
+      { message: [ 'same', undefined ], expected: [ 'same', 'same', 'same' ] },
+      { message: [ 'same', undefined, undefined ], expected: [ 'same', 'same', 'same' ] },
+      { message: [ 'one', 'many', undefined ], expected: [ 'many', 'one', 'many' ] },
+      { message: [ '', 'one', '' ], expected: [ '', 'one', '' ] },
+      { message: [ '' ], expected: [ '', '', '' ] },
+    ]
+
+    for (const { message, expected } of cases) {
+      for (const n of [ 0, 1, 2 ]) {
+        expect(translator.tc({ en: message, de: 'fallback' }, n)).toBe(expected[n])
+      }
+    }
+  })
+
+  it('should reject tuple gaps when initializing, updating, or translating inline', () => {
+    const invalid = [ 'none', undefined, 'many' ] as const
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+
+    expect(() => makeTranslator({ defaultLanguage: 'en', translations: { hello: { en: invalid, de: '' } } })).toThrow(TypeError)
+    expect(() => translator.utils.updateTranslations({ hello: { en: invalid } })).toThrow(TypeError)
+    expect(() => translator.t({ en: invalid, de: '' })).toThrow(TypeError)
+  })
+
+  it('should reject invalid tuple lengths from untyped input', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    for (const message of [ [], [ 'a', 'b', 'c', 'd' ] ]) {
+      expect(() => translator.t({ en: message as unknown as TranslationMessage, de: '' })).toThrow(TypeError)
+    }
+  })
+
+  it('should leave translations unchanged when an update contains an invalid tuple', () => {
+    const translator = makeTranslator({
+      defaultLanguage: 'en',
+      translations: { hello: { en: 'original', de: '' } },
+    })
+    expect(translator.t('hello')).toBe('original')
+    expect(() => translator.utils.updateTranslations({
+      hello: { en: 'partial update' },
+      cats: { en: [ 'none', undefined, 'many' ] },
+    })).toThrow(TypeError)
+
+    // Force the next lookup to read stored messages rather than the old cache.
+    translator.utils.updateTranslations({ cats: { en: 'cats' } })
+    expect(translator.t('hello')).toBe('original')
+  })
+
+  it('should copy tuples on initialization and updates, including before cache population', () => {
+    const original: [string, string] = [ 'one', 'many' ]
+    const translator = makeTranslator({
+      defaultLanguage: 'en',
+      translations: { hello: { en: original, de: original } },
+    })
+    original[0] = 'mutated'
+    original[1] = 'mutated'
+    expect(translator.tc('hello', 1)).toBe('one')
+    expect(translator.tc('hello', 2)).toBe('many')
+    translator.language = 'de'
+    expect(translator.tc('hello', 1)).toBe('one')
+
+    const update: [string, string, string] = [ 'zero updated', 'one updated', 'many updated' ]
+    translator.utils.updateTranslations({ hello: { en: update } })
+    update.fill('mutated')
+    translator.language = 'en'
+    expect(translator.tc('hello', 0)).toBe('zero updated')
+    expect(translator.tc('hello', 1)).toBe('one updated')
+    expect(translator.tc('hello', 2)).toBe('many updated')
+
+    translator.utils.updateTranslations({ hello: { de: 'cache invalidation' } })
+    expect(translator.tc('hello', 2)).toBe('many updated')
+  })
+
+  it('should use tuples in regional translations and fall back to string messages', () => {
+    const translator = makeTranslator({
+      defaultLanguage: 'en-US',
+      translations: { hello: { 'en': 'one | many', 'de': '', 'de-AT': [ 'eins', 'viele' ] as const } },
+    })
+
+    translator.locale = new Intl.Locale('de-AT')
+    expect(translator.tc('hello', 2)).toBe('viele')
+    translator.region = 'DE'
+    expect(translator.tc('hello', 2)).toBe('many')
+    translator.utils.updateTranslations({ hello: { 'de-DE': [ 'eines', 'mehrere' ] as const } })
+    expect(translator.tc('hello', 2)).toBe('mehrere')
   })
 
   it('should pluralize translations with an option for zero', (context) => {
