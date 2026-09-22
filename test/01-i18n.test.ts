@@ -482,6 +482,24 @@ describe('I18N Plugin', () => {
     expect(translator.t({ en: message, de: message }, { x: 'A', X: 'B' })).toBe('{x}A{ X }B\n{x}{missing}')
   })
 
+  it('should handle backslashes before placeholders like backslashes before pipes', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const slash = String.fromCharCode(92)
+
+    for (let count = 0; count <= 6; count++) {
+      const message = `prefix ${slash.repeat(count)}{ name }{name}`
+      const translation = { en: message, de: message }
+      const prefix = `prefix ${slash.repeat(Math.floor(count / 2))}`
+
+      expect(translator.t(translation, { name: 'Alice' })).toBe(
+          prefix + (count % 2 ? '{ name }' : 'Alice') + 'Alice',
+      )
+      expect(translator.t(translation)).toBe(
+          prefix + (count % 2 ? '{ name }' : '{name}') + '{name}',
+      )
+    }
+  })
+
   it('should parse cached placeholders independently of supplied parameters', () => {
     const message = String.raw`Hello { name }, write \{ example }`
     const translator = makeTranslator({

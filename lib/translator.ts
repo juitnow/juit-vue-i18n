@@ -40,7 +40,7 @@ export type DateInput = Date | string | number | null | undefined
  * This interface provides methods to translate messages, format numbers, and
  * format dates and times.
  *
- * Configured instances can be accessed using the `useI18n()` composition
+ * Configured instances can be accessed using the `useTranslator()` composition
  * function, which will provide an instance of the translator.
  */
 export interface Translator {
@@ -71,7 +71,7 @@ export interface Translator {
    *   pipe, the first will be used for singular, the second for zero or plural
    * * `" no apples | one apple | {n} apples "` when _three_ translations are
    *   separated by a pipe, the first will be used for zero, the second for
-   *   singular, the second for zero or plural
+   *   singular, the third for plural
    *
    * For convenience, the `{n}` message parameter will always be contextualized
    * with the number, unless overridden in the `params` themselves.
@@ -448,8 +448,13 @@ function parseTemplate(template: string): TemplatePart[] {
       break
     }
 
-    if (literal.endsWith('\\')) {
-      literal = literal.slice(0, -1) + template.slice(index, end + 1)
+    // As with pipes, pairs are literal backslashes and an odd remainder escapes.
+    let slashes = 0
+    while (literal[literal.length - slashes - 1] === '\\') slashes++
+    literal = literal.slice(0, literal.length - slashes) + '\\'.repeat(Math.floor(slashes / 2))
+
+    if (slashes % 2) {
+      literal += template.slice(index, end + 1)
     } else {
       if (literal) parts.push(literal)
       parts.push({ param: template.slice(index + 1, end).trim() })

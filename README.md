@@ -229,6 +229,12 @@ Escape a placeholder's opening brace with a backslash to display it literally:
 JavaScript string, write the backslash as `\\`, or use a `String.raw` template.
 Inserted parameter values are treated as literal text and are never parsed again.
 
+Backslashes before placeholders follow the same rule as those before pipes:
+each pair produces one literal backslash, and an odd remaining backslash
+escapes the placeholder. With two actual backslashes before `{name}`, one
+backslash is displayed and `name` is substituted; with three, one backslash
+is displayed and `{name}` stays literal.
+
 For example:
 
 ```typescript
