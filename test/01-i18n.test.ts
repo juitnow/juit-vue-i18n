@@ -1,11 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, expectTypeOf, it } from 'vitest'
 
 import { isISOCountry, isISOCurrency, isISOLanguage, ISO_COUNTRIES, ISO_LANGUAGES } from '../lib'
 import { makeTranslator } from '../lib/translator'
 import countries from './data/iso_3166-1.json' with { type: 'json' }
 import languages from './data/iso_639-1.json' with { type: 'json' }
 
-import type { TranslationMessage } from '../lib'
+import type { DateTimeFormatAlias, Language, NumberFormatAlias, TranslationKey, TranslationMessage } from '../lib'
 import type { Translator } from '../lib/translator'
 
 declare module '../lib/index' {
@@ -19,6 +19,14 @@ declare module '../lib/index' {
 
 describe('I18N Plugin', () => {
   let translator: Translator
+
+  it('should narrow configured types and retain defaults for omitted configuration', () => {
+    expectTypeOf<Language>().toEqualTypeOf<'de' | 'en'>()
+    expectTypeOf<TranslationKey>().toEqualTypeOf<'hello' | 'cats'>()
+    expectTypeOf<DateTimeFormatAlias>().toEqualTypeOf<string>()
+    expectTypeOf<NumberFormatAlias>().toEqualTypeOf<string>()
+    expectTypeOf<ReturnType<typeof makeTranslator>>().toEqualTypeOf<Translator>()
+  })
 
   it('should create a translator', () => {
     translator = makeTranslator({

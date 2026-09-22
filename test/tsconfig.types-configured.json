@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.app.json",
+  "compilerOptions": {
+    "types": [
+      "node"
+    ],
+    "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.types-configured.tsbuildinfo"
+  },
+  "include": [
+    "../lib/**/*.ts",
+    "types/configured.ts"
+  ]
+}
