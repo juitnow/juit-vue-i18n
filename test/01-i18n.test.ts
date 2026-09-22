@@ -482,6 +482,54 @@ describe('I18N Plugin', () => {
     expect(translator.t({ en: message, de: message }, { x: 'A', X: 'B' })).toBe('{x}A{ X }B\n{x}{missing}')
   })
 
+  it('should parse cached placeholders independently of supplied parameters', () => {
+    const message = String.raw`Hello { name }, write \{ example }`
+    const translator = makeTranslator({
+      defaultLanguage: 'en',
+      translations: { hello: { en: message, de: message } },
+    })
+
+    expect(translator.t('hello')).toBe('Hello {name}, write { example }')
+    expect(translator.t('hello', { name: 'Alice', example: 'ignored' })).toBe('Hello Alice, write { example }')
+    expect(translator.t('hello', { name: '{example}', example: 'ignored' })).toBe('Hello {example}, write { example }')
+    expect(translator.t('hello')).toBe('Hello {name}, write { example }')
+
+    translator.utils.updateTranslations({ hello: { en: 'Bye { name }' } })
+    expect(translator.t('hello', { name: 'Alice' })).toBe('Bye Alice')
+  })
+
+  it('should only replace placeholders with own parameter values', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const message = '{ constructor } { toString } { __proto__ }'
+    const translation = { en: message, de: message }
+
+    expect(translator.t(translation)).toBe('{constructor} {toString} {__proto__}')
+    expect(translator.t(translation, {
+      ['constructor']: 'C', ['toString']: 'T', ['__proto__']: 'P',
+    })).toBe('C T P')
+  })
+
+  it('should preserve malformed placeholders and normalize missing balanced placeholders', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    for (const message of [ 'before {name', 'after name}', 'before {x{y}' ]) {
+      expect(translator.t({ en: message, de: message }, { name: 'Alice', y: 'Y' })).toBe(message)
+    }
+
+    const message = 'before { x{y} } after'
+    expect(translator.t({ en: message, de: message })).toBe('before {x{y}} after')
+    expect(translator.t({ en: message, de: message }, { 'x{y}': 'value' })).toBe('before value after')
+  })
+
+  it('should parse placeholders and escapes in every plural variant', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const message = String.raw`\{ absent } | { name } \| one | {n} { name }`
+    const translation = { en: message, de: message }
+
+    expect(translator.tc(translation, 0)).toBe('{ absent }')
+    expect(translator.tc(translation, 1)).toBe('{name} | one')
+    expect(translator.tc(translation, 2, { name: 'items' })).toBe('2 items')
+  })
+
   it('should pluralize translations', (context) => {
     if (!translator) return context.skip()
 

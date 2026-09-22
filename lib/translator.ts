@@ -324,7 +324,8 @@ export function makeTranslator(options: I18nOptions): Translator {
 type LanguageKeys = readonly [ string, ...string[] ]
 type InternalTranslation = Map<string, string | undefined>
 type InternalTranslations = Map<string, InternalTranslation>
-type TranslationTemplate = { zero: string, singular: string, plural: string }
+type TemplatePart = string | { param: string }
+type TranslationTemplate = { zero: TemplatePart[], singular: TemplatePart[], plural: TemplatePart[] }
 
 /**
  * Cached parsed translation templates.
@@ -394,10 +395,8 @@ function extractTemplate(
   if (! string) {
     const language = languages[languages.length - 1]
     warn(`Translation missing default language "${language}" in`, translation)
-    return { zero: '', singular: '', plural: '' }
+    return { zero: [], singular: [], plural: [] }
   }
-
-  let parsed: TranslationTemplate
 
   const translations: string[] = []
   let start = 0
@@ -416,19 +415,51 @@ function extractTemplate(
     start = match.index + match[0].length
   }
   translations.push(part + string.slice(start))
+  const [ first, second, third ] = translations.map(parseTemplate)
   if (translations.length === 1) {
-    const [ singular ] = translations
-    parsed = { zero: singular!, singular: singular!, plural: singular! }
+    return { zero: first!, singular: first!, plural: first! }
   } else if (translations.length === 2) {
-    const [ singular, plural ] = translations
-    parsed ={ zero: plural!, singular: singular!, plural: plural! }
+    return { zero: second!, singular: first!, plural: second! }
   } else {
-    const [ zero, singular, plural ] = translations
-    parsed ={ zero: zero!, singular: singular!, plural: plural! }
+    return { zero: first!, singular: second!, plural: third! }
+  }
+}
+
+/** Parse balanced placeholders and resolve escapes independently of parameter values. */
+function parseTemplate(template: string): TemplatePart[] {
+  const parts: TemplatePart[] = []
+  let literal = ''
+
+  for (let index = 0; index < template.length; index++) {
+    if (template[index] !== '{') {
+      literal += template[index]
+      continue
+    }
+
+    // Balanced braces preserve parameter names such as "x{y}".
+    let end = index + 1
+    let depth = 1
+    for (; end < template.length; end++) {
+      if (template[end] === '{') depth++
+      if (template[end] === '}' && --depth === 0) break
+    }
+    if (depth) {
+      literal += template.slice(index)
+      break
+    }
+
+    if (literal.endsWith('\\')) {
+      literal = literal.slice(0, -1) + template.slice(index, end + 1)
+    } else {
+      if (literal) parts.push(literal)
+      parts.push({ param: template.slice(index + 1, end).trim() })
+      literal = ''
+    }
+    index = end
   }
 
-  const { zero, singular, plural } = parsed
-  return { zero: zero.trim(), singular: singular.trim(), plural: plural.trim() }
+  if (literal) parts.push(literal)
+  return parts
 }
 
 /** Replace the parameters in a translation template, returning a string */
@@ -443,21 +474,13 @@ function replaceParams(
     n === 1 ? template.singular :
     template.plural
 
-  const replacements = Object.entries(params).map(([ prop, value ]) => {
-    const string =
-      typeof value === 'number' ? format.format(value) :
+  return formatted.map((part) => {
+    if (typeof part === 'string') return part
+    if (! Object.hasOwn(params, part.param)) return `{${part.param}}`
+
+    const value = params[part.param]
+    return typeof value === 'number' ? format.format(value) :
       typeof value === 'string' ? value :
       value ? String(value) : ''
-
-    const escapedProp = prop.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const pattern = `{\\s*${escapedProp}\\s*}`
-    return { pattern, matcher: new RegExp(`^${pattern}$`), string }
-  })
-
-  // Replace only original placeholders, never text inserted by another parameter.
-  const alternatives = replacements.map(({ pattern }) => pattern).join('|')
-  const expr = new RegExp(`(\\\\)?(${alternatives})`, 'g')
-  return formatted.replaceAll(expr, (_, escape, token) => {
-    return escape ? token : replacements.find(({ matcher }) => matcher.test(token))!.string
-  }).trim()
+  }).join('').trim()
 }

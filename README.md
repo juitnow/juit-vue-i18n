@@ -221,6 +221,14 @@ const pangram = translator.t({
 Translations can include parameters by enclosing them in curly braces `{param}`.
 Parameter names are case-sensitive: `{name}` and `{NAME}` refer to different parameters.
 
+Whitespace around parameter names is ignored. If a parameter is missing,
+its placeholder is kept in normalized form: `{ name }` becomes `{name}`.
+
+Escape a placeholder's opening brace with a backslash to display it literally:
+`\{ name }` becomes `{ name }`, even when no parameter is supplied. In a normal
+JavaScript string, write the backslash as `\\`, or use a `String.raw` template.
+Inserted parameter values are treated as literal text and are never parsed again.
+
 For example:
 
 ```typescript
@@ -237,8 +245,8 @@ Numeric parameters are formatted according to the current locale:
 
 ```typescript
 const string = translator.t({
-  en: 'Score {points} points',
-  de: 'Punktestand {points} Punkte'
+  en: 'Score { points } points',
+  de: 'Punktestand { points } Punkte'
 }, { points: 1234.56 })
 // This will result in "Score 1,234.56 points" or "Punktestand 1.234,56 Punkte"
 ```
