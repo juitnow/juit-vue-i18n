@@ -312,18 +312,18 @@ interface LanguageMatcherConstructor {
    *
    * If no valid ISO languages are provided, an error will be thrown.
    */
-  new <A extends [ ISOLanguage, ...ISOLanguage[] ]>(availableLanguages: A): LanguageMatcher<A>
+  new <const A extends readonly [ ISOLanguage, ...ISOLanguage[] ]>(availableLanguages: A): LanguageMatcher<A>
 }
 
 /**
  * A language matcher that determines the best matching language from a set
  * of available languages
  */
-export interface LanguageMatcher<T extends ISOLanguage[]> {
+export interface LanguageMatcher<T extends readonly [ ISOLanguage, ...ISOLanguage[] ]> {
   /** The list of available languages, with the first one being the default */
-  readonly availableLanguages: Readonly<[ISOLanguage, ...ISOLanguage[]]>
+  readonly availableLanguages: Readonly<T>
   /** The default language */
-  readonly defaultLanguage: ISOLanguage
+  readonly defaultLanguage: T[0]
 
   /**
    * Determine the best matching language from the available languages.
@@ -342,17 +342,17 @@ export interface LanguageMatcher<T extends ISOLanguage[]> {
    * If the specified language is not available, the default language will be
    * returned.
    */
-  match(languages: string[] | string | undefined | null): T[number]
+  match(languages: readonly string[] | string | undefined | null): T[number]
 }
 
 /** Implementation of the {@link LanguageMatcher} interface */
-class LanguageMatcherImpl<L extends ISOLanguage[]> implements LanguageMatcher<L> {
-  readonly availableLanguages: Readonly<[ISOLanguage, ...ISOLanguage[]]>
+class LanguageMatcherImpl implements LanguageMatcher<readonly [ ISOLanguage, ...ISOLanguage[] ]> {
+  readonly availableLanguages: readonly [ ISOLanguage, ...ISOLanguage[] ]
   readonly defaultLanguage: ISOLanguage
 
-  constructor(availableLanguages: ISOLanguage | ISOLanguage[]) {
-    const languages = Array.isArray(availableLanguages) ?
-      availableLanguages : [ availableLanguages ]
+  constructor(availableLanguages: ISOLanguage | readonly ISOLanguage[]) {
+    const languages = typeof availableLanguages === 'string' ?
+      [ availableLanguages ] : availableLanguages
 
     const [ defaultLanguage, ...extraLanguages ] = languages
         .map(normalizeLanguage) // normalize each language or undefined
@@ -366,7 +366,7 @@ class LanguageMatcherImpl<L extends ISOLanguage[]> implements LanguageMatcher<L>
     this.availableLanguages = [ defaultLanguage, ...extraLanguages ]
   }
 
-  match(languages: string[] | string | undefined | null): L[number] {
+  match(languages: readonly string[] | string | undefined | null): ISOLanguage {
     // Basic check...
     if (!languages) return this.defaultLanguage
 
@@ -375,7 +375,7 @@ class LanguageMatcherImpl<L extends ISOLanguage[]> implements LanguageMatcher<L>
 
     // Iterate over the provided languages in order of preference.
     for (const language of languages) {
-      const normalized = normalizeLanguage(language) as L[number]
+      const normalized = normalizeLanguage(language)
       if (! normalized) continue // empty after normalization
 
       // Check if the normalized language is available. If so, we match!
@@ -390,4 +390,4 @@ class LanguageMatcherImpl<L extends ISOLanguage[]> implements LanguageMatcher<L>
 }
 
 /** The {@link LanguageMatcher} constructor */
-export const LanguageMatcher: LanguageMatcherConstructor = LanguageMatcherImpl
+export const LanguageMatcher = LanguageMatcherImpl as LanguageMatcherConstructor
