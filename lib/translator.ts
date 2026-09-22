@@ -416,25 +416,25 @@ function replaceParams(
 ): string {
   // Select the template to use based on the "n" (number) parameter
   const n = typeof params.n === 'string' ? Number(params.n) : params.n
-  let formatted = n === 0 ? template.zero :
+  const formatted = n === 0 ? template.zero :
     n === 1 ? template.singular :
     template.plural
 
-  // Replace any property `{ prop }` with the associated value
-  for (const [ prop, value ] of Object.entries(params)) {
+  const replacements = Object.entries(params).map(([ prop, value ]) => {
     const string =
       typeof value === 'number' ? format.format(value) :
       typeof value === 'string' ? value :
       value ? String(value) : ''
 
-    // Match literal parameter names, optionally preceded by an escape backslash.
     const escapedProp = prop.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const expr = new RegExp(`(\\\\)?({\\s*${escapedProp}\\s*})`, 'gi')
-    formatted = formatted.replaceAll(expr, (_, escape, token) => {
-      return escape ? token : string
-    })
-  }
+    const pattern = `{\\s*${escapedProp}\\s*}`
+    return { pattern, matcher: new RegExp(`^${pattern}$`, 'i'), string }
+  })
 
-  // All done!
-  return formatted.trim()
+  // Replace only original placeholders, never text inserted by another parameter.
+  const alternatives = replacements.map(({ pattern }) => pattern).join('|')
+  const expr = new RegExp(`(\\\\)?(${alternatives})`, 'gi')
+  return formatted.replaceAll(expr, (_, escape, token) => {
+    return escape ? token : replacements.find(({ matcher }) => matcher.test(token))!.string
+  }).trim()
 }

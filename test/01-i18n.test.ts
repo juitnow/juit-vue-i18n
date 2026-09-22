@@ -396,6 +396,15 @@ describe('I18N Plugin', () => {
     expect(translator.t({ en: message, de: message }, { x: 'A' })).toBe('AAA\nA\r\nA')
   })
 
+  it('should keep inserted parameter values literal regardless of parameter order', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const message = '{x} {y}'
+
+    for (const params of [ { x: '{y}', y: 'Alice' }, { y: 'Alice', x: '{y}' } ]) {
+      expect(translator.t({ en: message, de: message }, params)).toBe('{y} Alice')
+    }
+  })
+
   it('should treat parameter names as literal strings', () => {
     const translator = makeTranslator({ defaultLanguage: 'en' })
 
