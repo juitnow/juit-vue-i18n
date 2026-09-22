@@ -26,21 +26,20 @@ import type { ISOLanguage } from './iso-639'
  * translator, allowing for the interpolation of values into the translated
  * message.
  *
- * When the parameter value is a number, it will be formatted using the `n`
- * formatter before being interpolated into the message.
+ * Numeric values use the current locale and the `default` number format
+ * before being interpolated into the message.
  */
 export interface TranslationParams {
   [ key: string ]: string | number
 }
 
 /**
- * The date input type for date and time translation
+ * Accepted inputs for date and time formatting.
  *
- * When the input is a non-empty `string`, or a `number`, it will be constructed
- * into a `Date` object before being formatted.
+ * A non-empty string or a number is passed to the `Date` constructor before
+ * formatting. Numbers represent milliseconds since the Unix epoch.
  *
- * When the input is `null`, `undefined`, or an empty string, formatted result
- * will be a simple empty string.
+ * A `null`, `undefined`, or empty string input produces an empty string.
  */
 export type DateInput = Date | string | number | null | undefined
 
@@ -56,17 +55,17 @@ export type DateInput = Date | string | number | null | undefined
 export interface Translator {
   /** The current ISO-639-1 language code used by this translator. */
   language: ISOLanguage
-  /** The region (if any) used by thus translator to localize translations. */
+  /** The region (if any) used by this translator to localize translations. */
   region: ISOCountry | undefined
-  /** The `Locale` used by this translator (merges `language` and `region`) */
+  /** The current locale. Assignments retain only the language and region. */
   locale: Readonly<Intl.Locale>
 
   /**
    * Return the (possibly parameterized) translation for the specified message
    * in the current language.
    *
-   * Internally, this method uses the `tc(...)` function with `n=1`, in order to
-   * avoid duplication of message keys
+   * Delegates to `tc(...)` with `n=1`. A supplied `params.n` overrides this
+   * count, including for plural selection.
    */
   t(key: TranslationKey | Translation, params?: TranslationParams): string
 
@@ -74,39 +73,42 @@ export interface Translator {
    * Return the (possibly parameterized) translation for the specified message
    * in the current language, with pluralization.
    *
-   * For pluralization, translation messages should be separated by the pipe
-   * character, like in Vue I18N. Example:
+   * String messages can contain variants separated by unescaped pipes:
    *
    * * `" one apple | {n} apples "` when _two_ translations are separated by a
-   *   pipe, the first will be used for singular, the second for zero or plural
+   *   pipe, the first is used for singular, and the second for zero or plural.
    * * `" no apples | one apple | {n} apples "` when _three_ translations are
    *   separated by a pipe, the first will be used for zero, the second for
-   *   singular, the third for plural
+   *   singular, and the third for plural.
    *
    * Messages can also be readonly tuples: `[message]`, `[singular, plural]`,
    * or `[zero, singular, plural]`. Pipes inside tuple elements are literal;
    * placeholders and their escapes are still parsed.
    *
-   * For convenience, the `{n}` message parameter will always be contextualized
-   * with the number, unless overridden in the `params` themselves.
+   * The `{n}` parameter defaults to the supplied count. `params.n` overrides
+   * both its displayed value and plural selection. Zero and one select their
+   * respective variants; every other count selects the plural variant.
    */
   tc(key: TranslationKey | Translation, n: number, params?: TranslationParams): string
 
   /**
-   * Format a number according to the current language.
+   * Format a number according to the current locale.
    *
    * When `format` is provided, it will be used to configure the number format.
-   * This can be one of the aliases specified at initialization, or a
-   * fully-fledged `Intl.NumberFormatOptions` object.
+   * Accepts a built-in or custom alias, or an `Intl.NumberFormatOptions`
+   * object. Omitting it selects the `default` alias. A null or undefined
+   * value produces an empty string.
    */
   n(value?: number | bigint | null | undefined, format?: NumberFormatAlias | Intl.NumberFormatOptions): string
 
   /**
-   * Format date and time according to the current language.
+   * Format a date and time according to the current locale.
    *
    * When `format` is provided, it will be used to configure the date and time
-   * format. This can be one of the aliases specified at initialization, or a
-   * fully-fledged `Intl.DateTimeFormatOptions` object.
+   * format. Accepts a built-in or custom alias, or an
+   * `Intl.DateTimeFormatOptions` object. Omitting it selects the `default`
+   * alias. The explicit `timeZone` takes precedence over `format.timeZone`,
+   * then `defaultTimeZone`, then the runtime's time zone.
    */
   d(date?: DateInput, format?: DateTimeFormatAlias | Intl.DateTimeFormatOptions, timeZone?: string): string
 
@@ -114,13 +116,13 @@ export interface Translator {
   utils: {
     /**
      * Return the name of the language for the given ISO-639-1 code localized
-     * using the current language
+     * using the current locale.
      */
     language(code: ISOLanguage): string
 
     /**
      * Return the name of the country (or region) for the given ISO-3166-1 code
-     * (or CLDR region code) using the current language
+     * (or CLDR region code) using the current locale.
      */
     country(code: ISOCountry | 'EU' | 'UN'): string
 
@@ -131,7 +133,10 @@ export interface Translator {
     flag(code: ISOCountry | 'EU' | 'UN'): string
 
     /**
-     * Update the translations used by this translator.
+     * Merge translations and clear cached templates. Empty strings and
+     * undefined values are ignored; use a tuple containing an empty string
+     * for an intentionally blank message. Tuples are copied before storing.
+     * Updates affect subsequent calls but do not trigger reactive updates.
      */
     updateTranslations(translations: Partial<Record<TranslationKey, Partial<Translation>>>): void
   }
@@ -153,12 +158,12 @@ function checkLocale(locale: Intl.Locale): void {
 
 /** Create a _reactive_ translator object from the given options */
 export function makeTranslator(options: I18nOptions): Translator {
-  // Default locale, parsing the default language
+  // Parse the configured default language, or use the supplied locale.
   const defaultLocale: Intl.Locale = typeof options.defaultLanguage === 'string' ?
     new Intl.Locale(options.defaultLanguage) :
     options.defaultLanguage
 
-  // Normalized default language (language-REGION)
+  // Retain only the default language and optional region.
   const defaultLanguage = defaultLocale.region ?
     `${defaultLocale.language}-${defaultLocale.region}` :
     defaultLocale.language
@@ -166,13 +171,13 @@ export function makeTranslator(options: I18nOptions): Translator {
   // Default time zone
   const defaultTimeZone = options.defaultTimeZone
 
-  // Build our internal translations map
+  // Snapshot the translations, including copies of message tuples.
   const translations: InternalTranslations = new Map()
   Object.entries(options.translations ?? {}).forEach(([ key, value ]) => {
     translations.set(key, copyTranslation(value))
   })
 
-  // Create from `null` proto: we don't want to inherit from Object.prototype
+  // Use a null prototype so inherited properties cannot resolve as format aliases.
   const dateTimeFormats: DateTimeFormats = Object.assign(Object.create(null), {
     default: { dateStyle: 'medium', timeStyle: 'medium' },
     short: { dateStyle: 'short', timeStyle: 'short' },
@@ -180,14 +185,14 @@ export function makeTranslator(options: I18nOptions): Translator {
     long: { dateStyle: 'long', timeStyle: 'long' },
     full: { dateStyle: 'full', timeStyle: 'full' },
 
-    // date only formats
+    // Formats for dates only
     date: { dateStyle: 'medium' },
     shortDate: { dateStyle: 'short' },
     mediumDate: { dateStyle: 'medium' },
     longDate: { dateStyle: 'long' },
     fullDate: { dateStyle: 'full' },
 
-    // time only formats
+    // Formats for times only
     time: { timeStyle: 'medium' },
     shortTime: { timeStyle: 'short' },
     mediumTime: { timeStyle: 'medium' },
@@ -198,9 +203,9 @@ export function makeTranslator(options: I18nOptions): Translator {
     ...options.dateTimeFormats,
   })
 
-  // Create from `null` proto: we don't want to inherit from Object.prototype
+  // Use a null prototype so inherited properties cannot resolve as format aliases.
   const numberFormats: NumberFormats = Object.assign(Object.create(null), {
-    // Expand all currency codes into number formats for currencies
+    // Create currency aliases for the codes reported by the runtime.
     ...ISO_CURRENCIES.reduce((formats, currency) => {
       formats[currency] = { style: 'currency', currency }
       return formats
@@ -211,12 +216,11 @@ export function makeTranslator(options: I18nOptions): Translator {
     ...options.numberFormats,
   })
 
-  // Current locale, from the browser's language settings
+  // Initialize the current locale from the configured default.
   const locale = shallowRef(new Intl.Locale(defaultLanguage))
   watch(locale, checkLocale, { immediate: true })
-  // checkLocale(locale.value)
 
-  // Language order, from the current locale
+  // Try the current regional variant and base language, then the default equivalents.
   const languages = computed(() => {
     const { language, region } = locale.value
     const order: string[] = [ language ]
@@ -226,7 +230,7 @@ export function makeTranslator(options: I18nOptions): Translator {
     return order as any as LanguageKeys
   })
 
-  // The translator object (non-reactive)
+  // Build the translator object; its accessors read and write the locale ref.
   const translator = {
     get locale() {
       return locale.value
@@ -323,7 +327,7 @@ export function makeTranslator(options: I18nOptions): Translator {
         }
 
         // Clear the cache for the updated translations
-        // istanbul ignore else // no need to clear the cache if no updates made
+        // istanbul ignore else // No need to clear the cache if no updates were made.
         if (updated) caches.delete(translations)
       },
     },
@@ -342,7 +346,7 @@ type InternalTranslations = Map<string, InternalTranslation>
 type TemplatePart = string | { param: string }
 type TranslationTemplate = { zero: TemplatePart[], singular: TemplatePart[], plural: TemplatePart[] }
 
-/** Copy message tuples so caller mutations cannot change stored translations. */
+/** Copy and validate message tuples, allowing omitted trailing variants but no gaps. */
 function copyMessage(message: TranslationMessage | undefined): InternalMessage | undefined {
   if (message == null || typeof message === 'string') return message
 
@@ -369,7 +373,7 @@ function copyTranslation(translation: Partial<Translation> | undefined): Interna
  *
  * The keys are:
  * 1) the translations instance (WeakMap key)
- * 2) the current language (first entry in the order)
+ * 2) the current language and optional region (first entry in the fallback order)
  * 3) the translation key
  */
 const caches = new WeakMap<InternalTranslations, Map<string, Map<string, TranslationTemplate>>>()
@@ -387,7 +391,7 @@ function getTemplate(
     let cache = caches.get(translations)
     if (! cache) caches.set(translations, cache = new Map())
 
-    // Get the cache for the current language
+    // Get the cache for the current language and optional region.
     let languageCache = cache.get(languages[0])
     if (! languageCache) cache.set(languages[0], languageCache = new Map())
 
@@ -407,16 +411,15 @@ function getTemplate(
 
     return template
   } else {
-    // At this point "translation" here is a record of language-to-string
-    // mappings... let's convert it to an InternalTranslation map
+    // Snapshot inline messages, including tuples, without caching the result.
     const map = copyTranslation(translation)
     return extractTemplate(map, languages)
   }
 }
 
 /**
- * Extract a message from a translation, according to its locale, and split
- * it into its parsed components: zero, singular, and plural.
+ * Select a message in fallback order and parse its zero, singular, and
+ * plural variants into literal strings and parameter tokens.
  */
 function extractTemplate(
     translation: InternalTranslation,
@@ -447,13 +450,13 @@ function extractTemplate(
   }
 }
 
-/** Split pipe-delimited variants and decode escaped pipes and backslashes. */
+/** Split variants at unescaped pipes and decode backslash runs immediately before pipes. */
 function splitVariants(string: string): string[] {
   const translations: string[] = []
   let start = 0
   let part = ''
 
-  // An odd backslash escapes the pipe; each pair represents a literal backslash.
+  // Each pair produces one literal backslash; an odd remainder escapes the pipe.
   for (const match of string.matchAll(/(\\*)\|/g)) {
     const slashes = match[1]!.length
     part += string.slice(start, match.index) + '\\'.repeat(Math.floor(slashes / 2))
@@ -511,7 +514,7 @@ function parseTemplate(template: string): TemplatePart[] {
   return parts
 }
 
-/** Replace the parameters in a translation template, returning a string */
+/** Select a plural variant, substitute parameters once, and trim the result. */
 function replaceParams(
     template: TranslationTemplate,
     params: TranslationParams,

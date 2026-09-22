@@ -8,7 +8,7 @@ import type { ISOCurrency } from './iso-4217'
 import type { ISOLanguage } from './iso-639'
 import type { Translator } from './translator'
 
-/* ===== REFERENCE LANGUAGES AND COUNTRIES ================================== */
+/* ===== REFERENCE LANGUAGES, COUNTRIES, AND CURRENCIES ====================== */
 
 export { isISOCountry, ISO_COUNTRIES } from './iso-3166'
 export { isISOCurrency, ISO_CURRENCIES } from './iso-4217'
@@ -21,24 +21,24 @@ export type * from './iso-639'
 /* ===== TYPES FOR DECLARATION MERGING ====================================== */
 
 /**
- * I18n Configuration interface (to be merged with the actual configuration).
+ * Application configuration types, supplied through declaration merging.
  *
  * This interface (intentionally empty) is used to merge the actual per-app
  * configuration of the translation system, in order to provide the correct
  * types to the rest of the system.
  *
- * Two properties are expected to be defined in the configuration:
+ * The following properties can be defined as unions of string literals:
  *
- * * `languages`: the list of supported languages for the application. Those
- *                are ISO 639-1 language codes, and when specified, _every_
- *                translation _must_ include a translation for each.
- * * `translationKeys`: the list of translation keys known by the application.
+ * * `languages`: the supported ISO 639-1 language codes. When configured
+ *                with a subset of codes, each translation must include
+ *                a message for every base language in that subset.
+ * * `translationKeys`: the translation keys known by the application.
  *                      Those are the arbitrary keys used to identify the
- *                      messages to be  translated with the `t` and `tc`
+ *                      messages to be translated with the `t` and `tc`
  *                      methods of `Translator`.
- * * `dateTimeFormats`: the date and time formats _aliases_ used by the
+ * * `dateTimeFormats`: the date and time format _aliases_ used by the
  *                      application.
- * * `numberFormats`: the number formats _aliases_ used by the application.
+ * * `numberFormats`: the number format _aliases_ used by the application.
  *
  * To configure the types, follow the example below:
  *
@@ -80,58 +80,55 @@ export interface I18nConfiguration {
 
 /* ===== FROM CONFIG TO TRANSLATIONS ======================================== */
 
-/** Extract the value associated with key `K` from type `T` if it extends `R`, otherwise return `R` */
+/** Extract `T[K]` when present and assignable to `R`; otherwise fall back to `R`. */
 type ExtractConfig<T, R, K extends string> = T extends { [ X in K ]: infer V } ? V extends R ? V : R : R
 
 /** The languages configured in `I18nConfiguration` or all ISO languages */
 export type Language = ExtractConfig<I18nConfiguration, ISOLanguage, 'languages'>
 
-/** A pipe-delimited message or one to three explicit plural variants. */
+/** A message with optional pipe-delimited variants, or a readonly tuple of one to three variants. */
 export type TranslationMessage = string | readonly [string, string?, string?]
 
-/** Base translations, either required when languages are set or all optional */
+/** Base languages are required for a configured subset; otherwise all are optional. */
 type BaseTranslation = ISOLanguage extends Language ? {
   readonly [ key in ISOLanguage ]?: TranslationMessage
 } : {
   readonly [ key in Language ]: TranslationMessage
 }
 
-/** Extended translations, supporting multiple region of each language */
+/** Optional regional variants of each supported language. */
 type ExtendedTranslation = {
   readonly [ key in `${Language}-${string}` ]?: TranslationMessage
 }
 
-/** Prettify our `Translations` exported type */
+/** Expand the properties of the exported `Translation` type for editor hints. */
 type PrettifyTranslation<T> = { [ l in keyof T ]: T[l] }
 
 /**
  * A type describing the translations for a given translation key.
  *
- * When the `I18nConfig` interface is properly merged with and its contains
- * the `languages` property, this type will represent the list of required
- * translation keys (languages) required for each translation.
- *
- * When left unconfigured, all ISO languages will be considered as optional.
+ * When `I18nConfiguration.languages` specifies a subset of ISO languages,
+ * every base language in that subset is required. Regional variants are
+ * optional. When unconfigured, or configured with all ISO languages, every
+ * language is optional.
  */
 export type Translation = PrettifyTranslation<BaseTranslation & ExtendedTranslation>
 
 /**
  * All known translation keys.
  *
- * When the `I18nConfig` interface is properly merged with and its contains
- * the `translationKeys` property, this type will represent the list of
- * translations keys available to the `t(...)` and `tc(...)` methods.
+ * `I18nConfiguration.translationKeys` restricts the keys accepted by the
+ * `t(...)` and `tc(...)` methods and by `utils.updateTranslations(...)`.
  *
  * When left unconfigured, this type will be `string`.
  */
 export type TranslationKey = ExtractConfig<I18nConfiguration, string, 'translationKeys'>
 
 /**
- * All known date and time formats aliases.
+ * Supported date and time format aliases.
  *
- * When the `I18nConfig` interface is properly merged with and its contains
- * the `dateTimeFormats` property, this type will represent the list of
- * date and time formats available to the `d(...)` method.
+ * `I18nConfiguration.dateTimeFormats` defines the custom aliases accepted
+ * by `d(...)`. Built-in aliases remain available.
  *
  * When left unconfigured, this type will be `string`.
  */
@@ -141,11 +138,10 @@ export type DateTimeFormatAlias = ExtractConfig<I18nConfiguration, string, 'date
   | 'time' | 'shortTime' | 'mediumTime' | 'longTime' | 'fullTime'
 
 /**
- * All known number formats aliases.
+ * Supported number format aliases.
  *
- * When the `I18nConfig` interface is properly merged with and its contains
- * the `numberFormats` property, this type will represent the list of
- * date and time formats available to the `n(...)` method.
+ * `I18nConfiguration.numberFormats` defines the custom aliases accepted
+ * by `n(...)`. The `default` alias and currency code types remain available.
  *
  * When left unconfigured, this type will be `string`.
  */
@@ -160,9 +156,8 @@ export type * from './translator'
 /**
  * Options to initialize the translations handled by the translation system.
  *
- * Shared translations are defined as a key-value pair, where the key is the
- * identifier of the translation, and the value is an object containing the
- * translations for each language.
+ * Each key identifies a message, and its value maps languages and regional
+ * variants to message strings or plural tuples.
  */
 export interface Translations {
   readonly [ key: string ]: Translation
@@ -182,14 +177,14 @@ export interface Translations {
  *   long: { dateStyle: 'long', timeStyle: 'long' },
  *   full: { dateStyle: 'full', timeStyle: 'full' },
  *
- *   // date only formats
+ *   // Formats for dates only
  *   date: { dateStyle: 'medium' },
  *   shortDate: { dateStyle: 'short' },
  *   mediumDate: { dateStyle: 'medium' },
  *   longDate: { dateStyle: 'long' },
  *   fullDate: { dateStyle: 'full' },
  *
- *   // time only formats
+ *   // Formats for times only
  *   time: { timeStyle: 'medium' },
  *   shortTime: { timeStyle: 'short' },
  *   mediumTime: { timeStyle: 'medium' },
@@ -213,7 +208,7 @@ export interface DateTimeFormats {
  *   default: { }, // use the default number format
  *   EUR: { style: 'currency', currency: 'EUR' },
  *   USD: { style: 'currency', currency: 'USD' },
- *   // ... all currency codes can be used as aliases
+ *   // ... codes from ISO_CURRENCIES are available as aliases
  * }
  * ```
  */
@@ -221,7 +216,7 @@ export interface NumberFormats {
   readonly [ key: string ]: Intl.NumberFormatOptions
 }
 
-/** The language or locale to use at construction */
+/** The initial language or locale; only its language and region are retained. */
 export type DefaultLanguage = ISOLanguage | `${ISOLanguage}-${string}` | Intl.Locale
 
 /** Options to initialize the I18n plugin */
@@ -254,7 +249,7 @@ export function i18n(app: App, optionsOrLanguage: Language | I18nOptions): App {
   return app
 }
 
-/** Retrieve the translator instance from the Vue app */
+/** Retrieve the translator from the current Vue injection context, or throw if none is provided. */
 export function useTranslator(): Translator {
   const translator = inject(injectionSymbol)
   if (! translator) throw new Error('No translator found in the Vue app')
@@ -273,11 +268,11 @@ declare module 'vue' {
      * in the current language, with pluralization.
      */
     $tc: Translator['tc']
-    /** Format a number into a string according to the current language */
+    /** Format a number into a string according to the current locale. */
     $n: Translator['n']
     /**
-     * Format date and time using the specified style (defaults to `medium`)
-     * according to the current language
+     * Format a date and time using the current locale and the specified
+     * format, or the configurable `default` alias when omitted.
      */
     $d: Translator['d']
   }
@@ -299,16 +294,17 @@ interface LanguageMatcherConstructor {
    * Create a new {@link LanguageMatcher} instance matching *only* the single
    * language specified.
    *
-   * If the specified language is not a valid ISO language, an error will be
-   * thrown.
+   * At runtime, the input is normalized. If it does not resolve to a valid
+   * ISO language code, an error is thrown.
    */
   new <L extends ISOLanguage>(availableLanguages: L): LanguageMatcher<[ L ]>
   /**
    * Create a new {@link LanguageMatcher} instance matching the specified set
    * of available languages.
    *
-   * All the specified languages must be valid ISO languages. If any of them is
-   * not a valid ISO language, it will be filtered out.
+   * Typed inputs must be valid ISO language codes. At runtime, inputs are
+   * normalized and invalid entries are filtered out. The resulting list is
+   * copied, so later changes to the input array do not affect the matcher.
    *
    * If no valid ISO languages are provided, an error will be thrown.
    */
@@ -317,7 +313,7 @@ interface LanguageMatcherConstructor {
 
 /**
  * A language matcher that determines the best matching language from a set
- * of available languages
+ * of available languages.
  */
 export interface LanguageMatcher<T extends readonly [ ISOLanguage, ...ISOLanguage[] ]> {
   /** The list of available languages, with the first one being the default */
@@ -328,8 +324,8 @@ export interface LanguageMatcher<T extends readonly [ ISOLanguage, ...ISOLanguag
   /**
    * Determine the best matching language from the available languages.
    *
-   * If multiple languages are provided, the best match will be determined
-   * based on the order of preference.
+   * The first supported language in the input preference order is returned.
+   * Empty input or an input with no matches returns the default language.
    *
    * All languages here will be *normalized* before matching (for example
    * `en-US` will be normalized to `en`, and `JA` will be normalized to `ja`).
@@ -338,9 +334,6 @@ export interface LanguageMatcher<T extends readonly [ ISOLanguage, ...ISOLanguag
    *                  available languages.
    * @returns The best matching language from the available languages, or the
    *          default language if no match is found.
-   *
-   * If the specified language is not available, the default language will be
-   * returned.
    */
   match(languages: readonly string[] | string | undefined | null): T[number]
 }
@@ -355,8 +348,8 @@ class LanguageMatcherImpl implements LanguageMatcher<readonly [ ISOLanguage, ...
       [ availableLanguages ] : availableLanguages
 
     const [ defaultLanguage, ...extraLanguages ] = languages
-        .map(normalizeLanguage) // normalize each language or undefined
-        .filter((language) => !! language) // strip undefined
+        .map(normalizeLanguage) // Normalize each language, returning undefined for invalid entries.
+        .filter((language) => !! language) // Remove invalid entries.
 
     if (!defaultLanguage) {
       throw new Error(`At least one valid ISO language must be provided (${languages.join(', ')})`)
@@ -367,7 +360,7 @@ class LanguageMatcherImpl implements LanguageMatcher<readonly [ ISOLanguage, ...
   }
 
   match(languages: readonly string[] | string | undefined | null): ISOLanguage {
-    // Basic check...
+    // Use the default when no preferences are supplied.
     if (!languages) return this.defaultLanguage
 
     // Normalize the input to an array of strings.

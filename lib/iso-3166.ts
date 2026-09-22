@@ -1,4 +1,4 @@
-/** The array of all known ISO-3166-1 countries */
+/** Frozen, sorted ISO 3166-1 country codes, plus the CLDR code XK for Kosovo. */
 export const ISO_COUNTRIES = Object.freeze([
   ...('ADAEAFAGAIALAMAOAQARASATAUAWAXAZBABBBDBEBFBGBHBIBJBLBMBNBOBQBRBSBTBVBW' +
   'BYBZCACCCDCFCGCHCICKCLCMCNCOCRCUCVCWCXCYCZDEDJDKDMDODZECEEEGEHERESETFIFJFK' +
@@ -9,7 +9,7 @@ export const ISO_COUNTRIES = Object.freeze([
   'TLTMTNTOTRTTTVTWTZUAUGUMUSUYUZVAVCVEVGVIVNVUWFWSXKYEYTZAZMZW').match(/../g)!,
 ].sort() as ISOCountry[])
 
-/** All known ISO-3166-1 countries and their names */
+/** Reference country codes and names, including the CLDR code XK for Kosovo. */
 export type ISOCountries = {
   AD: 'Andorra',
   AE: 'United Arab Emirates',
@@ -255,7 +255,7 @@ export type ISOCountries = {
   VU: 'Vanuatu',
   WF: 'Wallis and Futuna',
   WS: 'Samoa',
-  XK: 'Kosovo', // not an official ISO-3166-1 country, but specified in CLDR
+  XK: 'Kosovo', // CLDR code, not an officially assigned ISO 3166-1 code.
   YE: 'Yemen',
   YT: 'Mayotte',
   ZA: 'South Africa',
@@ -263,10 +263,10 @@ export type ISOCountries = {
   ZW: 'Zimbabwe',
 }
 
-/** Array of all known ISO-3166-1 country names */
+/** Country code union derived from the reference table, including XK. */
 export type ISOCountry = keyof ISOCountries
 
-/** Type guard to check if a value is a valid ISO-3166-1 country code */
+/** Check whether a value is a country code in ISO_COUNTRIES, including XK. */
 export function isISOCountry(value: unknown): value is ISOCountry {
   return ISO_COUNTRIES.includes(value as ISOCountry)
 }

@@ -1,7 +1,7 @@
-/** The array of ISO-4217 currencies supported by the runtime */
+/** Frozen currency codes reported by the runtime; these may differ from the static reference type. */
 export const ISO_CURRENCIES = Object.freeze(Intl.supportedValuesOf('currency') as ISOCurrency[])
 
-/** All known ISO-4217 currencies and their name */
+/** Static reference currency codes and their names. */
 export type ISOCurrencies = {
   AED: 'United Arab Emirates Dirham',
   AFN: 'Afghan Afghani',
@@ -167,10 +167,10 @@ export type ISOCurrencies = {
   ZWL: 'Zimbabwean Dollar (2009)',
 }
 
-/** All known ISO-4217 currency codes */
+/** Currency code union derived from the static reference table. */
 export type ISOCurrency = keyof ISOCurrencies
 
-/** Type guard to check if a value is a valid ISO-4217 currency code */
+/** Check runtime currency support; the static type may differ from the runtime's codes. */
 export function isISOCurrency(value: unknown): value is ISOCurrency {
   return ISO_CURRENCIES.includes(value as ISOCurrency)
 }

@@ -1,4 +1,4 @@
-/** The array of all known ISO-639-1 languages */
+/** Frozen, sorted array of ISO 639-1 language codes. */
 export const ISO_LANGUAGES = Object.freeze([
   ...('aaabaeafakamanarasavayazbabebgbhbibmbnbobrbscacechcocrcscucvcydadedvdz' +
   'eeeleneoeseteufafffifjfofrfygagdglgngugvhahehihohrhthuhyhziaidieigiiikiois' +
@@ -8,7 +8,7 @@ export const ISO_LANGUAGES = Object.freeze([
   'zu').match(/../g)!,
 ].sort() as ISOLanguage[])
 
-/** All known ISO-639-1 languages and their name */
+/** ISO 639-1 language codes and their names. */
 export type ISOLanguages = {
   aa: 'Afar',
   ab: 'Abkhaz',
@@ -196,10 +196,10 @@ export type ISOLanguages = {
   zu: 'Zulu',
 }
 
-/** All known ISO-639-1 language codes */
+/** Language code union derived from the reference table. */
 export type ISOLanguage = keyof ISOLanguages
 
-/** Type guard to check if a value is a valid ISO-639-1 language code */
+/** Check whether a value is an ISO 639-1 language code in ISO_LANGUAGES. */
 export function isISOLanguage(value: unknown): value is ISOLanguage {
   return ISO_LANGUAGES.includes(value as ISOLanguage)
 }
