@@ -427,10 +427,11 @@ function replaceParams(
       typeof value === 'string' ? value :
       value ? String(value) : ''
 
-    // Expression matches `{ xxx }` where `{` is _not_ preceded by a '\'
-    const expr = new RegExp(`(.|^)({\\s*${prop}\\s*})`, 'gi')
-    formatted = formatted.replaceAll(expr, (_, before, token) => {
-      return before === '\\' ? token : before + string
+    // Match literal parameter names, optionally preceded by an escape backslash.
+    const escapedProp = prop.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const expr = new RegExp(`(\\\\)?({\\s*${escapedProp}\\s*})`, 'gi')
+    formatted = formatted.replaceAll(expr, (_, escape, token) => {
+      return escape ? token : string
     })
   }
 

@@ -389,6 +389,32 @@ describe('I18N Plugin', () => {
     }, { n: null, foo: {} } as any )).toBe('Artikel [object Object]') // edge case
   })
 
+  it('should replace adjacent parameters and parameters after newlines', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const message = '{x}{x}{x}\n{x}\r\n{ x }'
+
+    expect(translator.t({ en: message, de: message }, { x: 'A' })).toBe('AAA\nA\r\nA')
+  })
+
+  it('should treat parameter names as literal strings', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+
+    for (const name of [ 'a.b', '[', 'a+b', '(x)', 'a$', 'x\\y', 'x{y}' ]) {
+      const message = `{${name}}{${name}}`
+      expect(translator.t({ en: message, de: message }, { [name]: 'A' })).toBe('AA')
+    }
+
+    const message = '{a.b} {axb}'
+    expect(translator.t({ en: message, de: message }, { 'a.b': 'A' })).toBe('A {axb}')
+  })
+
+  it('should preserve escaped parameters alongside adjacent replacements', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const message = '\\{x}{x}\\{ X }{ X }\n\\{x}{missing}'
+
+    expect(translator.t({ en: message, de: message }, { x: 'A' })).toBe('{x}A{ X }A\n{x}{missing}')
+  })
+
   it('should pluralize translations', (context) => {
     if (!translator) return context.skip()
 
