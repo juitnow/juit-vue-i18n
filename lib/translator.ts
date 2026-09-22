@@ -434,7 +434,8 @@ function extractTemplate(
 
   if (! message) {
     const language = languages[languages.length - 1]
-    warn(`Translation missing default language "${language}" in`, translation)
+    const entries = Object.fromEntries(translation.entries())
+    warn(`Translation missing default language "${language}" in`, entries)
     return { zero: [], singular: [], plural: [] }
   }
 
