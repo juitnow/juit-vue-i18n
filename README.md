@@ -219,6 +219,7 @@ const pangram = translator.t({
 ### Parameterizing translations
 
 Translations can include parameters by enclosing them in curly braces `{param}`.
+Parameter names are case-sensitive: `{name}` and `{NAME}` refer to different parameters.
 
 For example:
 

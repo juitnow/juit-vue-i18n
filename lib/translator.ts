@@ -451,12 +451,12 @@ function replaceParams(
 
     const escapedProp = prop.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     const pattern = `{\\s*${escapedProp}\\s*}`
-    return { pattern, matcher: new RegExp(`^${pattern}$`, 'i'), string }
+    return { pattern, matcher: new RegExp(`^${pattern}$`), string }
   })
 
   // Replace only original placeholders, never text inserted by another parameter.
   const alternatives = replacements.map(({ pattern }) => pattern).join('|')
-  const expr = new RegExp(`(\\\\)?(${alternatives})`, 'gi')
+  const expr = new RegExp(`(\\\\)?(${alternatives})`, 'g')
   return formatted.replaceAll(expr, (_, escape, token) => {
     return escape ? token : replacements.find(({ matcher }) => matcher.test(token))!.string
   }).trim()

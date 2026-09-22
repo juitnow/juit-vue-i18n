@@ -450,6 +450,19 @@ describe('I18N Plugin', () => {
     }
   })
 
+  it('should match parameter names case-sensitively', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const message = '{name} {NAME} {Name} {n} {N}'
+
+    for (const params of [
+      { name: 'lower', NAME: 'upper', N: 'Alice' },
+      { N: 'Alice', NAME: 'upper', name: 'lower' },
+    ]) {
+      expect(translator.t({ en: message, de: message }, params)).toBe('lower upper {Name} 1 Alice')
+      expect(translator.tc({ en: message, de: message }, 2, params)).toBe('lower upper {Name} 2 Alice')
+    }
+  })
+
   it('should treat parameter names as literal strings', () => {
     const translator = makeTranslator({ defaultLanguage: 'en' })
 
@@ -466,7 +479,7 @@ describe('I18N Plugin', () => {
     const translator = makeTranslator({ defaultLanguage: 'en' })
     const message = '\\{x}{x}\\{ X }{ X }\n\\{x}{missing}'
 
-    expect(translator.t({ en: message, de: message }, { x: 'A' })).toBe('{x}A{ X }A\n{x}{missing}')
+    expect(translator.t({ en: message, de: message }, { x: 'A', X: 'B' })).toBe('{x}A{ X }B\n{x}{missing}')
   })
 
   it('should pluralize translations', (context) => {
