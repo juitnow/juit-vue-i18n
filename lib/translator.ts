@@ -4,7 +4,17 @@ import { ISO_COUNTRIES } from './iso-3166'
 import { ISO_CURRENCIES } from './iso-4217'
 import { ISO_LANGUAGES } from './iso-639'
 
-import type { DateTimeFormatAlias, DateTimeFormats, I18nOptions, ISOCountry, NumberFormatAlias, NumberFormats, Translation, TranslationKey } from './index'
+import type {
+  DateTimeFormatAlias,
+  DateTimeFormats,
+  I18nOptions,
+  ISOCountry,
+  NumberFormatAlias,
+  NumberFormats,
+  Translation,
+  TranslationKey,
+  TranslationMessage,
+} from './index'
 import type { ISOLanguage } from './iso-639'
 
 /* ===== TRANSLATOR INTERFACE =============================================== */
@@ -72,6 +82,10 @@ export interface Translator {
    * * `" no apples | one apple | {n} apples "` when _three_ translations are
    *   separated by a pipe, the first will be used for zero, the second for
    *   singular, the third for plural
+   *
+   * Messages can also be readonly tuples: `[message]`, `[singular, plural]`,
+   * or `[zero, singular, plural]`. Pipes inside tuple elements are literal;
+   * placeholders and their escapes are still parsed.
    *
    * For convenience, the `{n}` message parameter will always be contextualized
    * with the number, unless overridden in the `params` themselves.
@@ -155,7 +169,7 @@ export function makeTranslator(options: I18nOptions): Translator {
   // Build our internal translations map
   const translations: InternalTranslations = new Map()
   Object.entries(options.translations ?? {}).forEach(([ key, value ]) => {
-    translations.set(key, new Map(Object.entries(value ?? {})))
+    translations.set(key, copyTranslation(value))
   })
 
   // Create from `null` proto: we don't want to inherit from Object.prototype
@@ -292,12 +306,12 @@ export function makeTranslator(options: I18nOptions): Translator {
             .join('')
       },
       updateTranslations(updates: Partial<Record<TranslationKey, Partial<Translation>>>): void {
+        // Validate and copy all inputs before changing stored messages or their cache.
+        const copiedUpdates = Object.entries(updates).map(([ key, translation ]) => [ key, copyTranslation(translation) ] as const)
         let updated = false
 
-        for (const [ key, translation ] of Object.entries(updates)) {
-          if (! translation) continue
-
-          for (const [ lang, value ] of Object.entries(translation)) {
+        for (const [ key, translation ] of copiedUpdates) {
+          for (const [ lang, value ] of translation) {
             if (! value) continue
 
             let translation = translations.get(key)
@@ -322,10 +336,33 @@ export function makeTranslator(options: I18nOptions): Translator {
 /* ===== TRANSLATION UTILITIES ============================================== */
 
 type LanguageKeys = readonly [ string, ...string[] ]
-type InternalTranslation = Map<string, string | undefined>
+type InternalMessage = string | string[]
+type InternalTranslation = Map<string, InternalMessage | undefined>
 type InternalTranslations = Map<string, InternalTranslation>
 type TemplatePart = string | { param: string }
 type TranslationTemplate = { zero: TemplatePart[], singular: TemplatePart[], plural: TemplatePart[] }
+
+/** Copy message tuples so caller mutations cannot change stored translations. */
+function copyMessage(message: TranslationMessage | undefined): InternalMessage | undefined {
+  if (message == null || typeof message === 'string') return message
+
+  const variants = [ ...message ]
+  while (variants.length && variants[variants.length - 1] === undefined) variants.pop()
+  if (! variants.length || variants.length > 3) {
+    throw new TypeError('Translation tuples must contain one to three strings without gaps')
+  }
+  return variants.map((variant) => {
+    if (typeof variant !== 'string') {
+      throw new TypeError('Translation tuples must contain one to three strings without gaps')
+    }
+    return variant
+  })
+}
+
+/** Snapshot a translation, including any explicit plural tuples. */
+function copyTranslation(translation: Partial<Translation> | undefined): InternalTranslation {
+  return new Map(Object.entries(translation ?? {}).map(([ language, message ]) => [ language, copyMessage(message) ] as const))
+}
 
 /**
  * Cached parsed translation templates.
@@ -372,7 +409,7 @@ function getTemplate(
   } else {
     // At this point "translation" here is a record of language-to-string
     // mappings... let's convert it to an InternalTranslation map
-    const map: InternalTranslation = new Map(Object.entries(translation))
+    const map = copyTranslation(translation)
     return extractTemplate(map, languages)
   }
 }
@@ -385,19 +422,33 @@ function extractTemplate(
     translation: InternalTranslation,
     languages: LanguageKeys,
 ): TranslationTemplate {
-  let string: string | undefined = undefined
+  let message: InternalMessage | undefined = undefined
 
   for (const language of languages) {
-    string = translation.get(language)
-    if (string) break
+    message = translation.get(language)
+    if (message) break
   }
 
-  if (! string) {
+  if (! message) {
     const language = languages[languages.length - 1]
     warn(`Translation missing default language "${language}" in`, translation)
     return { zero: [], singular: [], plural: [] }
   }
 
+  // Tuple elements are already separated; their pipes remain literal.
+  const translations = typeof message === 'string' ? splitVariants(message) : message
+  const [ first, second, third ] = translations.map(parseTemplate)
+  if (translations.length === 1) {
+    return { zero: first!, singular: first!, plural: first! }
+  } else if (translations.length === 2) {
+    return { zero: second!, singular: first!, plural: second! }
+  } else {
+    return { zero: first!, singular: second!, plural: third! }
+  }
+}
+
+/** Split pipe-delimited variants and decode escaped pipes and backslashes. */
+function splitVariants(string: string): string[] {
   const translations: string[] = []
   let start = 0
   let part = ''
@@ -415,14 +466,7 @@ function extractTemplate(
     start = match.index + match[0].length
   }
   translations.push(part + string.slice(start))
-  const [ first, second, third ] = translations.map(parseTemplate)
-  if (translations.length === 1) {
-    return { zero: first!, singular: first!, plural: first! }
-  } else if (translations.length === 2) {
-    return { zero: second!, singular: first!, plural: second! }
-  } else {
-    return { zero: first!, singular: second!, plural: third! }
-  }
+  return translations
 }
 
 /** Parse balanced placeholders and resolve escapes independently of parameter values. */

@@ -86,16 +86,19 @@ type ExtractConfig<T, R, K extends string> = T extends { [ X in K ]: infer V } ?
 /** The languages configured in `I18nConfiguration` or all ISO languages */
 export type Language = ExtractConfig<I18nConfiguration, ISOLanguage, 'languages'>
 
+/** A pipe-delimited message or one to three explicit plural variants. */
+export type TranslationMessage = string | readonly [string, string?, string?]
+
 /** Base translations, either required when languages are set or all optional */
 type BaseTranslation = ISOLanguage extends Language ? {
-  readonly [ key in ISOLanguage ]?: string
+  readonly [ key in ISOLanguage ]?: TranslationMessage
 } : {
-  readonly [ key in Language ]: string
+  readonly [ key in Language ]: TranslationMessage
 }
 
 /** Extended translations, supporting multiple region of each language */
 type ExtendedTranslation = {
-  readonly [ key in `${Language}-${string}` ]?: string
+  readonly [ key in `${Language}-${string}` ]?: TranslationMessage
 }
 
 /** Prettify our `Translations` exported type */
