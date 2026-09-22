@@ -152,7 +152,12 @@ export function makeTranslator(options: I18nOptions): Translator {
   // Default time zone
   const defaultTimeZone = options.defaultTimeZone
 
-  const translations: InternalTranslations = options.translations ? structuredClone(options.translations) : {}
+  // Build our internal translations map
+  const translations: InternalTranslations = new Map()
+  Object.entries(options.translations ?? {}).forEach(([ key, value ]) => {
+    translations.set(key, new Map(Object.entries(value ?? {})))
+  })
+
   const dateTimeFormats: DateTimeFormats = {
     default: { dateStyle: 'medium', timeStyle: 'medium' },
     short: { dateStyle: 'short', timeStyle: 'short' },
@@ -287,8 +292,10 @@ export function makeTranslator(options: I18nOptions): Translator {
           for (const [ lang, value ] of Object.entries(translation)) {
             if (! value) continue
 
-            translations[key] ||= {}
-            translations[key][lang] = value
+            let translation = translations.get(key)
+            if (! translation) translation = new Map()
+            translation.set(lang, value)
+            translations.set(key, translation)
             updated = true
           }
         }
@@ -307,8 +314,8 @@ export function makeTranslator(options: I18nOptions): Translator {
 /* ===== TRANSLATION UTILITIES ============================================== */
 
 type LanguageKeys = readonly [ string, ...string[] ]
-type InternalTranslation = Record<string, string | undefined>
-type InternalTranslations = Record<string, InternalTranslation>
+type InternalTranslation = Map<string, string | undefined>
+type InternalTranslations = Map<string, InternalTranslation>
 type TranslationTemplate = { zero: string, singular: string, plural: string }
 
 /**
@@ -319,7 +326,7 @@ type TranslationTemplate = { zero: string, singular: string, plural: string }
  * 2) the current language (first entry in the order)
  * 3) the translation key
  */
-const caches = new WeakMap<InternalTranslations, Record<string, Record<string, TranslationTemplate>>>()
+const caches = new WeakMap<InternalTranslations, Map<string, Map<string, TranslationTemplate>>>()
 
 /** Get the `TranslationTemplate` for the translation or translation key. */
 function getTemplate(
@@ -332,27 +339,32 @@ function getTemplate(
   if (typeof translation === 'string') {
     // Get the cache for the messages instance
     let cache = caches.get(translations)
-    if (! cache) caches.set(translations, cache = {})
+    if (! cache) caches.set(translations, cache = new Map())
 
     // Get the cache for the current language
-    let languageCache = cache[languages[0]]
-    if (! languageCache) cache[languages[0]] = languageCache = {}
+    let languageCache = cache.get(languages[0])
+    if (! languageCache) cache.set(languages[0], languageCache = new Map())
 
     // Get the translation from the cache or parse it
-    let template = languageCache[translation]
+    let template = languageCache.get(translation)
     if (! template) {
-      let object = translations[translation]
+      let object = translations.get(translation)
       if (! object) {
         warn(`Translation key "${translation}" not found`)
-        object = { [languages[languages.length - 1]!]: translation }
+        object = new Map()
+        object.set(languages[languages.length - 1]!, translation)
       }
       template = extractTemplate(object, languages)
-      languageCache[translation] = template
+
+      languageCache.set(translation, template)
     }
 
     return template
   } else {
-    return extractTemplate(translation, languages)
+    // At this point "translation" here is a record of language-to-string
+    // mappings... let's convert it to an InternalTranslation map
+    const map: InternalTranslation = new Map(Object.entries(translation))
+    return extractTemplate(map, languages)
   }
 }
 
@@ -367,7 +379,7 @@ function extractTemplate(
   let string: string | undefined = undefined
 
   for (const language of languages) {
-    string = translation[language as any]
+    string = translation.get(language)
     if (string) break
   }
 
