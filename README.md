@@ -23,6 +23,7 @@ required translation languages and translation keys.
 - [Formatting numbers](#formatting-numbers)
 - [Formatting dates](#formatting-dates)
 - [Configuring Types](#configuring-types)
+- [Language Matching](#language-matching)
 - [Legal Stuff](#legal-stuff)
 
 
@@ -408,6 +409,49 @@ In the same way, if we pass any other string but `hello` to `t(...)` or
 
 Also, date time format aliases will be augumented using the customizations
 specified in `dateTimeFormats` and `numberFormats`.
+
+
+## Language Matching
+
+The `LanguageMatcher` class selects a supported language from a user's
+preferences. It can be used independently of the Vue plugin, for example to
+choose the initial language from the browser's `navigator.languages`:
+
+```typescript
+import { LanguageMatcher } from '@juit/vue-i18n'
+
+const matcher = new LanguageMatcher([ 'en', 'de', 'ja' ])
+
+matcher.defaultLanguage // 'en'
+matcher.availableLanguages // [ 'en', 'de', 'ja' ]
+
+const app = createApp(MyApp).use(i18n, {
+  defaultLanguage: matcher.match([ ...navigator.languages ]),
+  translations,
+})
+```
+
+The constructor accepts a single ISO 639-1 language code (such as `'en'`) or
+a non-empty array of codes. The first valid language is the default, used
+whenever no preference matches.
+
+The `match(...)` method accepts a string, an array of strings in preference
+order. It returns the **first supported preference**, regardless of the order
+of the available languages:
+
+```typescript
+matcher.match('de') // 'de'
+matcher.match('JA-JP') // 'ja'
+matcher.match('de_AT') // 'de'
+matcher.match([ 'fr', 'ja-JP', 'de' ]) // 'ja'
+matcher.match('fr') // 'en' (default)
+matcher.match([]) // 'en' (default)
+matcher.match(null) // 'en' (default)
+matcher.match(undefined) // 'en' (default)
+
+const englishOnly = new LanguageMatcher('en')
+englishOnly.match('de') // 'en'
+```
 
 
 ## Legal Stuff
