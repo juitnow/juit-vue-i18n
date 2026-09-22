@@ -262,9 +262,9 @@ export function makeTranslator(options: I18nOptions): Translator {
       const options = typeof format === 'string' ? dateTimeFormats[format] : format
       if (! options) warn(`DateTimeFormat alias "${format}" not found`)
 
-      // Merge the default time zone with the options
-      const optionsWithTimeZone = { timeZone: defaultTimeZone, ...options }
-      if (timeZone) optionsWithTimeZone.timeZone = timeZone // Override the time zone
+      // Prefer the explicit time zone, then the format's zone, then the default.
+      timeZone = timeZone ?? options?.timeZone ?? defaultTimeZone
+      const optionsWithTimeZone = { ...options, timeZone }
 
       // Format our date, optionally defaulting the time zone
       return new Intl.DateTimeFormat(locale.value, optionsWithTimeZone).format(date)

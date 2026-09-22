@@ -333,6 +333,23 @@ describe('I18N Plugin', () => {
     expect(result5).toEqual('14/02/2009, 12:31')
   })
 
+  it('should use the default time zone when a format time zone is undefined', () => {
+    const date = new Date(1234567890123)
+    const format = { hour: '2-digit', minute: '2-digit', timeZone: undefined } as const
+
+    for (const defaultTimeZone of [ 'UTC', 'Asia/Tokyo' ]) {
+      const translator = makeTranslator({
+        defaultLanguage: 'en-GB',
+        defaultTimeZone,
+        dateTimeFormats: { custom: format },
+      })
+      const expected = new Intl.DateTimeFormat('en-GB', { ...format, timeZone: defaultTimeZone }).format(date)
+
+      expect(translator.d(date, format)).toBe(expected)
+      expect(translator.d(date, 'custom')).toBe(expected)
+    }
+  })
+
   it('should format a number in various languages with object formats', (context) => {
     if (!translator) return context.skip()
 
