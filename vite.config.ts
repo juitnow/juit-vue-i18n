@@ -19,8 +19,11 @@ export default defineConfig({
       name: 'JuitI18n',
       fileName: 'index',
     },
-    rollupOptions: {
+    rolldownOptions: {
       external: [ 'vue' ],
+      output: {
+        sourcemapExcludeSources: true,
+      },
     },
   },
 

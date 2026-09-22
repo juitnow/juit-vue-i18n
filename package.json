@@ -53,6 +53,8 @@
     "test": "test"
   },
   "files": [
-    "dist"
+    "dist",
+    "lib",
+    "*.md"
   ]
 }
