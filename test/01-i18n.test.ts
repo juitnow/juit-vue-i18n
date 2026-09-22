@@ -29,6 +29,7 @@ describe('I18N Plugin', () => {
           'de-DE': 'Hallo, Deutschland!',
           'de-AT': 'Hallo, Österreich!',
         },
+        world: null as any as Record<'en' | 'de', string>, // this should not brea
       },
     })
 
