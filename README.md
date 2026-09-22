@@ -29,6 +29,7 @@ required translation languages and translation keys.
 - [Configuring Types](#configuring-types)
 - [Updating Translations](#updating-translations)
 - [Language Matching](#language-matching)
+- [Remarks](#remarks)
 - [Legal Stuff](#legal-stuff)
 
 
@@ -495,6 +496,19 @@ matcher.match(undefined) // 'en' (default)
 const englishOnly = new LanguageMatcher('en')
 englishOnly.match('de') // 'en'
 ```
+
+
+## Remarks
+
+To keep the package small, the translator supports only the **language** and
+optional **region** of a locale. Both `defaultLanguage` and assignments to
+`translator.locale` discard script subtags and Unicode extensions, including
+calendar and numbering-system preferences. For example,
+`zh-Hant-TW-u-nu-hanidec` becomes `zh-TW`.
+
+Changing `translator.language` preserves the current region: switching from
+`en-CA` to `fr` produces `fr-CA`. Changing `translator.region` preserves the
+language; setting it to `undefined` removes the region.
 
 
 ## Legal Stuff

@@ -64,6 +64,27 @@ describe('I18N Plugin', () => {
     expect(translator.locale.toString()).toBe('de-AT')
   })
 
+  it('should preserve the region when changing language', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en-CA' })
+
+    translator.language = 'fr'
+    expect(translator.locale.toString()).toBe('fr-CA')
+
+    translator.region = undefined
+    expect(translator.locale.toString()).toBe('fr')
+
+    translator.language = 'en'
+    expect(translator.locale.toString()).toBe('en')
+  })
+
+  it('should keep only language and region from locales', () => {
+    const translator = makeTranslator({ defaultLanguage: 'zh-Hant-TW-u-nu-hanidec' })
+    expect(translator.locale.toString()).toBe('zh-TW')
+
+    translator.locale = new Intl.Locale('sr-Latn-RS-u-nu-latn')
+    expect(translator.locale.toString()).toBe('sr-RS')
+  })
+
   it('should find the best match for missing languages', (context) => {
     if (!translator) return context.skip()
 

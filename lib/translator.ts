@@ -216,7 +216,7 @@ export function makeTranslator(options: I18nOptions): Translator {
     },
 
     set locale(value: Intl.Locale) {
-      locale.value = value
+      locale.value = new Intl.Locale(value.language, { region: value.region })
     },
 
     get language(): ISOLanguage {
@@ -224,7 +224,7 @@ export function makeTranslator(options: I18nOptions): Translator {
     },
 
     set language(value: ISOLanguage) {
-      translator.locale = new Intl.Locale(value, { ...locale.value })
+      translator.locale = new Intl.Locale(value, { region: translator.region })
     },
 
     get region(): ISOCountry | undefined {
@@ -232,7 +232,7 @@ export function makeTranslator(options: I18nOptions): Translator {
     },
 
     set region(value: ISOCountry | undefined) {
-      translator.locale = new Intl.Locale(translator.language, { ...translator.locale, region: value || undefined })
+      translator.locale = new Intl.Locale(translator.language, { region: value || undefined })
     },
 
     n(value?: number | bigint | null | undefined, format: string | Intl.NumberFormatOptions = 'default'): string {
