@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, expectTypeOf, it } from 'vitest'
 
 import { isISOCountry, isISOCurrency, isISOLanguage, ISO_COUNTRIES, ISO_LANGUAGES } from '../lib'
 import { makeTranslator } from '../lib/translator'
 import countries from './data/iso_3166-1.json' with { type: 'json' }
 import languages from './data/iso_639-1.json' with { type: 'json' }
 
+import type { DateTimeFormatAlias, Language, NumberFormatAlias, TranslationKey, TranslationMessage } from '../lib'
 import type { Translator } from '../lib/translator'
 
 declare module '../lib/index' {
@@ -19,6 +20,14 @@ declare module '../lib/index' {
 describe('I18N Plugin', () => {
   let translator: Translator
 
+  it('should narrow configured types and retain defaults for omitted configuration', () => {
+    expectTypeOf<Language>().toEqualTypeOf<'de' | 'en'>()
+    expectTypeOf<TranslationKey>().toEqualTypeOf<'hello' | 'cats'>()
+    expectTypeOf<DateTimeFormatAlias>().toEqualTypeOf<string>()
+    expectTypeOf<NumberFormatAlias>().toEqualTypeOf<string>()
+    expectTypeOf<ReturnType<typeof makeTranslator>>().toEqualTypeOf<Translator>()
+  })
+
   it('should create a translator', () => {
     translator = makeTranslator({
       defaultLanguage: 'en',
@@ -29,6 +38,7 @@ describe('I18N Plugin', () => {
           'de-DE': 'Hallo, Deutschland!',
           'de-AT': 'Hallo, Österreich!',
         },
+        world: null as any as Record<'en' | 'de', string>, // this should not brea
       },
     })
 
@@ -63,6 +73,27 @@ describe('I18N Plugin', () => {
     expect(translator.locale.toString()).toBe('de-AT')
   })
 
+  it('should preserve the region when changing language', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en-CA' })
+
+    translator.language = 'fr'
+    expect(translator.locale.toString()).toBe('fr-CA')
+
+    translator.region = undefined
+    expect(translator.locale.toString()).toBe('fr')
+
+    translator.language = 'en'
+    expect(translator.locale.toString()).toBe('en')
+  })
+
+  it('should keep only language and region from locales', () => {
+    const translator = makeTranslator({ defaultLanguage: 'zh-Hant-TW-u-nu-hanidec' })
+    expect(translator.locale.toString()).toBe('zh-TW')
+
+    translator.locale = new Intl.Locale('sr-Latn-RS-u-nu-latn')
+    expect(translator.locale.toString()).toBe('sr-RS')
+  })
+
   it('should find the best match for missing languages', (context) => {
     if (!translator) return context.skip()
 
@@ -71,6 +102,27 @@ describe('I18N Plugin', () => {
 
     translator.locale = new Intl.Locale('ja-JP')
     expect(translator.t('hello')).toBe('Hello, World!')
+  })
+
+  it('should fall back from the default region to its base language', () => {
+    const translator = makeTranslator({
+      defaultLanguage: 'en-US',
+      translations: {
+        hello: { en: 'Hello!', de: '' },
+      },
+    })
+
+    translator.locale = new Intl.Locale('de-DE')
+    expect(translator.t('hello')).toBe('Hello!')
+
+    translator.utils.updateTranslations({ hello: { 'en-US': 'Howdy!' } })
+    expect(translator.t('hello')).toBe('Howdy!')
+
+    translator.utils.updateTranslations({ hello: { de: 'Hallo!' } })
+    expect(translator.t('hello')).toBe('Hallo!')
+
+    translator.utils.updateTranslations({ hello: { 'de-DE': 'Guten Tag!' } })
+    expect(translator.t('hello')).toBe('Guten Tag!')
   })
 
   it('should format a number in various languages', (context) => {
@@ -290,6 +342,51 @@ describe('I18N Plugin', () => {
     expect(result5).toEqual('14/02/2009, 12:31')
   })
 
+  it('should use the default time zone when a format time zone is undefined', () => {
+    const date = new Date(1234567890123)
+    const format = { hour: '2-digit', minute: '2-digit', timeZone: undefined } as const
+
+    for (const defaultTimeZone of [ 'UTC', 'Asia/Tokyo' ]) {
+      const translator = makeTranslator({
+        defaultLanguage: 'en-GB',
+        defaultTimeZone,
+        dateTimeFormats: { custom: format },
+      })
+      const expected = new Intl.DateTimeFormat('en-GB', { ...format, timeZone: defaultTimeZone }).format(date)
+
+      expect(translator.d(date, format)).toBe(expected)
+      expect(translator.d(date, 'custom')).toBe(expected)
+    }
+  })
+
+  it('should preserve non-enumerable format getters without modifying caller options', () => {
+    class DateFormat implements Intl.DateTimeFormatOptions {
+      get hour(): '2-digit' {
+        return '2-digit'
+      }
+      get minute(): '2-digit' {
+        return '2-digit'
+      }
+      get timeZone(): string {
+        return 'UTC'
+      }
+    }
+
+    const translator = makeTranslator({ defaultLanguage: 'en-GB' })
+    const date = new Date(1234567890123)
+    const formats = [
+      Object.freeze(new DateFormat()),
+      Object.freeze({ hour: '2-digit', minute: '2-digit', timeZone: 'UTC' } as const),
+    ]
+
+    for (const format of formats) {
+      expect(translator.d(date, format)).toBe('23:31')
+      expect(translator.d(date, format, 'Asia/Tokyo')).toBe('08:31')
+      expect(format.timeZone).toBe('UTC')
+      expect(translator.d(date, format)).toBe('23:31')
+    }
+  })
+
   it('should format a number in various languages with object formats', (context) => {
     if (!translator) return context.skip()
 
@@ -346,6 +443,120 @@ describe('I18N Plugin', () => {
     }, { n: null, foo: {} } as any )).toBe('Artikel [object Object]') // edge case
   })
 
+  it('should replace adjacent parameters and parameters after newlines', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const message = '{x}{x}{x}\n{x}\r\n{ x }'
+
+    expect(translator.t({ en: message, de: message }, { x: 'A' })).toBe('AAA\nA\r\nA')
+  })
+
+  it('should keep inserted parameter values literal regardless of parameter order', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const message = '{x} {y}'
+
+    for (const params of [ { x: '{y}', y: 'Alice' }, { y: 'Alice', x: '{y}' } ]) {
+      expect(translator.t({ en: message, de: message }, params)).toBe('{y} Alice')
+    }
+  })
+
+  it('should match parameter names case-sensitively', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const message = '{name} {NAME} {Name} {n} {N}'
+
+    for (const params of [
+      { name: 'lower', NAME: 'upper', N: 'Alice' },
+      { N: 'Alice', NAME: 'upper', name: 'lower' },
+    ]) {
+      expect(translator.t({ en: message, de: message }, params)).toBe('lower upper {Name} 1 Alice')
+      expect(translator.tc({ en: message, de: message }, 2, params)).toBe('lower upper {Name} 2 Alice')
+    }
+  })
+
+  it('should treat parameter names as literal strings', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+
+    for (const name of [ 'a.b', '[', 'a+b', '(x)', 'a$', 'x\\y', 'x{y}' ]) {
+      const message = `{${name}}{${name}}`
+      expect(translator.t({ en: message, de: message }, { [name]: 'A' })).toBe('AA')
+    }
+
+    const message = '{a.b} {axb}'
+    expect(translator.t({ en: message, de: message }, { 'a.b': 'A' })).toBe('A {axb}')
+  })
+
+  it('should preserve escaped parameters alongside adjacent replacements', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const message = '\\{x}{x}\\{ X }{ X }\n\\{x}{missing}'
+
+    expect(translator.t({ en: message, de: message }, { x: 'A', X: 'B' })).toBe('{x}A{ X }B\n{x}{missing}')
+  })
+
+  it('should handle backslashes before placeholders like backslashes before pipes', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const slash = String.fromCharCode(92)
+
+    for (let count = 0; count <= 6; count++) {
+      const message = `prefix ${slash.repeat(count)}{ name }{name}`
+      const translation = { en: message, de: message }
+      const prefix = `prefix ${slash.repeat(Math.floor(count / 2))}`
+
+      expect(translator.t(translation, { name: 'Alice' })).toBe(
+          prefix + (count % 2 ? '{ name }' : 'Alice') + 'Alice',
+      )
+      expect(translator.t(translation)).toBe(
+          prefix + (count % 2 ? '{ name }' : '{name}') + '{name}',
+      )
+    }
+  })
+
+  it('should parse cached placeholders independently of supplied parameters', () => {
+    const message = String.raw`Hello { name }, write \{ example }`
+    const translator = makeTranslator({
+      defaultLanguage: 'en',
+      translations: { hello: { en: message, de: message } },
+    })
+
+    expect(translator.t('hello')).toBe('Hello {name}, write { example }')
+    expect(translator.t('hello', { name: 'Alice', example: 'ignored' })).toBe('Hello Alice, write { example }')
+    expect(translator.t('hello', { name: '{example}', example: 'ignored' })).toBe('Hello {example}, write { example }')
+    expect(translator.t('hello')).toBe('Hello {name}, write { example }')
+
+    translator.utils.updateTranslations({ hello: { en: 'Bye { name }' } })
+    expect(translator.t('hello', { name: 'Alice' })).toBe('Bye Alice')
+  })
+
+  it('should only replace placeholders with own parameter values', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const message = '{ constructor } { toString } { __proto__ }'
+    const translation = { en: message, de: message }
+
+    expect(translator.t(translation)).toBe('{constructor} {toString} {__proto__}')
+    expect(translator.t(translation, {
+      ['constructor']: 'C', ['toString']: 'T', ['__proto__']: 'P',
+    })).toBe('C T P')
+  })
+
+  it('should preserve malformed placeholders and normalize missing balanced placeholders', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    for (const message of [ 'before {name', 'after name}', 'before {x{y}' ]) {
+      expect(translator.t({ en: message, de: message }, { name: 'Alice', y: 'Y' })).toBe(message)
+    }
+
+    const message = 'before { x{y} } after'
+    expect(translator.t({ en: message, de: message })).toBe('before {x{y}} after')
+    expect(translator.t({ en: message, de: message }, { 'x{y}': 'value' })).toBe('before value after')
+  })
+
+  it('should parse placeholders and escapes in every plural variant', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const message = String.raw`\{ absent } | { name } \| one | {n} { name }`
+    const translation = { en: message, de: message }
+
+    expect(translator.tc(translation, 0)).toBe('{ absent }')
+    expect(translator.tc(translation, 1)).toBe('{name} | one')
+    expect(translator.tc(translation, 2, { name: 'items' })).toBe('2 items')
+  })
+
   it('should pluralize translations', (context) => {
     if (!translator) return context.skip()
 
@@ -372,6 +583,142 @@ describe('I18N Plugin', () => {
       en: ' {n} cat | {n} cats ',
       de: ' {n} Katze | {n} Katzen ',
     }, { n: '1' })).toBe('1 Katze')
+  })
+
+  it('should unescape literal pipes in each plural variant', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const message = String.raw`none \| zero | one \| single | {n} \| many`
+    const translation = { en: message, de: message }
+
+    expect(translator.tc(translation, 0)).toBe('none | zero')
+    expect(translator.tc(translation, 1)).toBe('one | single')
+    expect(translator.tc(translation, 2)).toBe('2 | many')
+    expect(translator.t({ en: String.raw`A \| B`, de: '' })).toBe('A | B')
+  })
+
+  it('should preserve literal backslashes before pipes', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const slash = String.fromCharCode(92)
+
+    for (const count of [ 2, 3, 4, 5 ]) {
+      const message = `one ${slash.repeat(count)}| many`
+      const translation = { en: message, de: message }
+      const singular = `one ${slash.repeat(Math.floor(count / 2))}`
+
+      expect(translator.tc(translation, 1)).toBe(count % 2 ? `${singular}| many` : singular)
+      expect(translator.tc(translation, 2)).toBe(count % 2 ? `${singular}| many` : 'many')
+    }
+  })
+
+  it('should accept readonly translation tuples with one, two, or three variants', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const cases: { message: TranslationMessage, expected: readonly string[] }[] = [
+      { message: [ 'same' ] as const, expected: [ 'same', 'same', 'same' ] },
+      { message: [ 'one', '{n} many' ] as const, expected: [ '0 many', 'one', '2 many' ] },
+      { message: [ 'none', 'one', '{n} many' ] as const, expected: [ 'none', 'one', '2 many' ] },
+    ]
+
+    for (const { message, expected } of cases) {
+      for (const n of [ 0, 1, 2 ]) {
+        expect(translator.tc({ en: message, de: message }, n)).toBe(expected[n])
+      }
+    }
+  })
+
+  it('should keep pipes literal in tuples while parsing placeholders and escapes', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const message = [ 'one | item', String.raw`{n} \| items \{ name }` ] as const
+
+    expect(translator.tc({ en: message, de: message }, 1)).toBe('one | item')
+    expect(translator.tc({ en: message, de: message }, 2, { name: 'ignored' })).toBe(String.raw`2 \| items { name }`)
+  })
+
+  it('should omit trailing undefined tuple slots and preserve empty variants', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const cases: { message: TranslationMessage, expected: readonly string[] }[] = [
+      { message: [ 'same', undefined ], expected: [ 'same', 'same', 'same' ] },
+      { message: [ 'same', undefined, undefined ], expected: [ 'same', 'same', 'same' ] },
+      { message: [ 'one', 'many', undefined ], expected: [ 'many', 'one', 'many' ] },
+      { message: [ '', 'one', '' ], expected: [ '', 'one', '' ] },
+      { message: [ '' ], expected: [ '', '', '' ] },
+    ]
+
+    for (const { message, expected } of cases) {
+      for (const n of [ 0, 1, 2 ]) {
+        expect(translator.tc({ en: message, de: 'fallback' }, n)).toBe(expected[n])
+      }
+    }
+  })
+
+  it('should reject tuple gaps when initializing, updating, or translating inline', () => {
+    const invalid = [ 'none', undefined, 'many' ] as const
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+
+    expect(() => makeTranslator({ defaultLanguage: 'en', translations: { hello: { en: invalid, de: '' } } })).toThrow(TypeError)
+    expect(() => translator.utils.updateTranslations({ hello: { en: invalid } })).toThrow(TypeError)
+    expect(() => translator.t({ en: invalid, de: '' })).toThrow(TypeError)
+  })
+
+  it('should reject invalid tuple lengths from untyped input', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    for (const message of [ [], [ 'a', 'b', 'c', 'd' ] ]) {
+      expect(() => translator.t({ en: message as unknown as TranslationMessage, de: '' })).toThrow(TypeError)
+    }
+  })
+
+  it('should leave translations unchanged when an update contains an invalid tuple', () => {
+    const translator = makeTranslator({
+      defaultLanguage: 'en',
+      translations: { hello: { en: 'original', de: '' } },
+    })
+    expect(translator.t('hello')).toBe('original')
+    expect(() => translator.utils.updateTranslations({
+      hello: { en: 'partial update' },
+      cats: { en: [ 'none', undefined, 'many' ] },
+    })).toThrow(TypeError)
+
+    // Force the next lookup to read stored messages rather than the old cache.
+    translator.utils.updateTranslations({ cats: { en: 'cats' } })
+    expect(translator.t('hello')).toBe('original')
+  })
+
+  it('should copy tuples on initialization and updates, including before cache population', () => {
+    const original: [string, string] = [ 'one', 'many' ]
+    const translator = makeTranslator({
+      defaultLanguage: 'en',
+      translations: { hello: { en: original, de: original } },
+    })
+    original[0] = 'mutated'
+    original[1] = 'mutated'
+    expect(translator.tc('hello', 1)).toBe('one')
+    expect(translator.tc('hello', 2)).toBe('many')
+    translator.language = 'de'
+    expect(translator.tc('hello', 1)).toBe('one')
+
+    const update: [string, string, string] = [ 'zero updated', 'one updated', 'many updated' ]
+    translator.utils.updateTranslations({ hello: { en: update } })
+    update.fill('mutated')
+    translator.language = 'en'
+    expect(translator.tc('hello', 0)).toBe('zero updated')
+    expect(translator.tc('hello', 1)).toBe('one updated')
+    expect(translator.tc('hello', 2)).toBe('many updated')
+
+    translator.utils.updateTranslations({ hello: { de: 'cache invalidation' } })
+    expect(translator.tc('hello', 2)).toBe('many updated')
+  })
+
+  it('should use tuples in regional translations and fall back to string messages', () => {
+    const translator = makeTranslator({
+      defaultLanguage: 'en-US',
+      translations: { hello: { 'en': 'one | many', 'de': '', 'de-AT': [ 'eins', 'viele' ] as const } },
+    })
+
+    translator.locale = new Intl.Locale('de-AT')
+    expect(translator.tc('hello', 2)).toBe('viele')
+    translator.region = 'DE'
+    expect(translator.tc('hello', 2)).toBe('many')
+    translator.utils.updateTranslations({ hello: { 'de-DE': [ 'eines', 'mehrere' ] as const } })
+    expect(translator.tc('hello', 2)).toBe('mehrere')
   })
 
   it('should pluralize translations with an option for zero', (context) => {

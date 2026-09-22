@@ -1,7 +1,7 @@
-/** The array of all known ISO-639-1 languages */
-export const ISO_CURRENCIES = Intl.supportedValuesOf('currency') as ISOCurrency[]
+/** Frozen currency codes reported by the runtime; these may differ from the static reference type. */
+export const ISO_CURRENCIES = Object.freeze(Intl.supportedValuesOf('currency') as ISOCurrency[])
 
-/** All known ISO-4217 currencies and their name */
+/** Static reference currency codes and their names. */
 export type ISOCurrencies = {
   AED: 'United Arab Emirates Dirham',
   AFN: 'Afghan Afghani',
@@ -126,6 +126,7 @@ export type ISOCurrencies = {
   SEK: 'Swedish Krona',
   SGD: 'Singapore Dollar',
   SHP: 'St. Helena Pound',
+  SLE: 'Sierra Leonean Leone',
   SLL: 'Sierra Leonean Leone (1964—2022)',
   SOS: 'Somali Shilling',
   SRD: 'Surinamese Dollar',
@@ -154,6 +155,7 @@ export type ISOCurrencies = {
   WST: 'Samoan Tala',
   XAF: 'Central African CFA Franc',
   XCD: 'East Caribbean Dollar',
+  XCG: 'Caribbean Guilder',
   XDR: 'Special Drawing Rights',
   XOF: 'West African CFA Franc',
   XPF: 'CFP Franc',
@@ -161,13 +163,14 @@ export type ISOCurrencies = {
   YER: 'Yemeni Rial',
   ZAR: 'South African Rand',
   ZMW: 'Zambian Kwacha',
+  ZWG: 'Zimbabwe Gold',
   ZWL: 'Zimbabwean Dollar (2009)',
 }
 
-/** All known ISO-4217 currency codes */
+/** Currency code union derived from the static reference table. */
 export type ISOCurrency = keyof ISOCurrencies
 
-/** Type guard to check if a value is a valid ISO-4217 currency code */
+/** Check runtime currency support; the static type may differ from the runtime's codes. */
 export function isISOCurrency(value: unknown): value is ISOCurrency {
   return ISO_CURRENCIES.includes(value as ISOCurrency)
 }
