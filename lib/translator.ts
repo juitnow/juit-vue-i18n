@@ -158,7 +158,8 @@ export function makeTranslator(options: I18nOptions): Translator {
     translations.set(key, new Map(Object.entries(value ?? {})))
   })
 
-  const dateTimeFormats: DateTimeFormats = {
+  // Create from `null` proto: we don't want to inherit from Object.prototype
+  const dateTimeFormats: DateTimeFormats = Object.assign(Object.create(null), {
     default: { dateStyle: 'medium', timeStyle: 'medium' },
     short: { dateStyle: 'short', timeStyle: 'short' },
     medium: { dateStyle: 'medium', timeStyle: 'medium' },
@@ -181,9 +182,10 @@ export function makeTranslator(options: I18nOptions): Translator {
 
     // overrides and custom formats
     ...options.dateTimeFormats,
-  }
+  })
 
-  const numberFormats: NumberFormats = {
+  // Create from `null` proto: we don't want to inherit from Object.prototype
+  const numberFormats: NumberFormats = Object.assign(Object.create(null), {
     // Expand all currency codes into number formats for currencies
     ...ISO_CURRENCIES.reduce((formats, currency) => {
       formats[currency] = { style: 'currency', currency }
@@ -193,7 +195,7 @@ export function makeTranslator(options: I18nOptions): Translator {
     default: {},
     // Overrides and custom formats
     ...options.numberFormats,
-  }
+  })
 
   // Current locale, from the browser's language settings
   const locale = shallowRef(new Intl.Locale(defaultLanguage))
