@@ -1,5 +1,6 @@
 import { inject } from 'vue'
 
+import { isISOLanguage } from './iso-639'
 import { makeTranslator } from './translator'
 
 import type { App } from 'vue'
@@ -278,3 +279,112 @@ declare module 'vue' {
     $d: Translator['d']
   }
 }
+
+/* ===== UTILITIES ========================================================== */
+
+function normalizeLanguage(language: unknown): ISOLanguage | undefined {
+  if (typeof language !== 'string') return undefined
+
+  const normalized = language.toLowerCase().split(/[-_]/)[0]
+  if (! normalized) return undefined // empty after normalization
+
+  return isISOLanguage(normalized) ? normalized : undefined
+}
+
+interface LanguageMatcherConstructor {
+  /**
+   * Create a new {@link LanguageMatcher} instance matching *only* the single
+   * language specified.
+   *
+   * If the specified language is not a valid ISO language, an error will be
+   * thrown.
+   */
+  new <L extends ISOLanguage>(availableLanguages: L): LanguageMatcher<[ L ]>
+  /**
+   * Create a new {@link LanguageMatcher} instance matching the specified set
+   * of available languages.
+   *
+   * All the specified languages must be valid ISO languages. If any of them is
+   * not a valid ISO language, it will be filtered out.
+   *
+   * If no valid ISO languages are provided, an error will be thrown.
+   */
+  new <A extends [ ISOLanguage, ...ISOLanguage[] ]>(availableLanguages: A): LanguageMatcher<A>
+}
+
+/**
+ * A language matcher that determines the best matching language from a set
+ * of available languages
+ */
+export interface LanguageMatcher<T extends ISOLanguage[]> {
+  /** The list of available languages, with the first one being the default */
+  readonly availableLanguages: Readonly<[ISOLanguage, ...ISOLanguage[]]>
+  /** The default language */
+  readonly defaultLanguage: ISOLanguage
+
+  /**
+   * Determine the best matching language from the available languages.
+   *
+   * If multiple languages are provided, the best match will be determined
+   * based on the order of preference.
+   *
+   * All languages here will be *normalized* before matching (for example
+   * `en-US` will be normalized to `en`, and `JA` will be normalized to `ja`).
+   *
+   * @param languages The language or list of languages to match against the
+   *                  available languages.
+   * @returns The best matching language from the available languages, or the
+   *          default language if no match is found.
+   *
+   * If the specified language is not available, the default language will be
+   * returned.
+   */
+  match(languages: string[] | string | undefined | null): T[number]
+}
+
+/** Implementation of the {@link LanguageMatcher} interface */
+class LanguageMatcherImpl<L extends ISOLanguage[]> implements LanguageMatcher<L> {
+  readonly availableLanguages: Readonly<[ISOLanguage, ...ISOLanguage[]]>
+  readonly defaultLanguage: ISOLanguage
+
+  constructor(availableLanguages: ISOLanguage | ISOLanguage[]) {
+    const languages = Array.isArray(availableLanguages) ?
+      availableLanguages : [ availableLanguages ]
+
+    const [ defaultLanguage, ...extraLanguages ] = languages
+        .map(normalizeLanguage) // normalize each language or undefined
+        .filter((language) => !! language) // strip undefined
+
+    if (!defaultLanguage) {
+      throw new Error(`At least one valid ISO language must be provided (${languages.join(', ')})`)
+    }
+
+    this.defaultLanguage = defaultLanguage
+    this.availableLanguages = [ defaultLanguage, ...extraLanguages ]
+  }
+
+  match(languages: string[] | string | undefined | null): L[number] {
+    // Basic check...
+    if (!languages) return this.defaultLanguage
+
+    // Normalize the input to an array of strings.
+    if (typeof languages === 'string') languages = [ languages ]
+
+    // Iterate over the provided languages in order of preference.
+    for (const language of languages) {
+      const normalized = normalizeLanguage(language) as L[number]
+      if (! normalized) continue // empty after normalization
+
+      // Check if the normalized language is available. If so, we match!
+      if (this.availableLanguages.includes(normalized)) {
+        return normalized
+      }
+    }
+
+    // None of the provided languages matched, so we return the default.
+    return this.defaultLanguage
+  }
+}
+
+/** The {@link LanguageMatcher} constructor */
+export const LanguageMatcher: LanguageMatcherConstructor = LanguageMatcherImpl
