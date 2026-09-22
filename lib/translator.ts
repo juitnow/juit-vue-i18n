@@ -206,6 +206,7 @@ export function makeTranslator(options: I18nOptions): Translator {
     const order: string[] = [ language ]
     if (region) order.unshift(`${language}-${region}`)
     if (language !== defaultLanguage) order.push(defaultLanguage)
+    if (! order.includes(defaultLocale.language)) order.push(defaultLocale.language)
     return order as any as LanguageKeys
   })
 

@@ -95,6 +95,27 @@ describe('I18N Plugin', () => {
     expect(translator.t('hello')).toBe('Hello, World!')
   })
 
+  it('should fall back from the default region to its base language', () => {
+    const translator = makeTranslator({
+      defaultLanguage: 'en-US',
+      translations: {
+        hello: { en: 'Hello!', de: '' },
+      },
+    })
+
+    translator.locale = new Intl.Locale('de-DE')
+    expect(translator.t('hello')).toBe('Hello!')
+
+    translator.utils.updateTranslations({ hello: { 'en-US': 'Howdy!' } })
+    expect(translator.t('hello')).toBe('Howdy!')
+
+    translator.utils.updateTranslations({ hello: { de: 'Hallo!' } })
+    expect(translator.t('hello')).toBe('Hallo!')
+
+    translator.utils.updateTranslations({ hello: { 'de-DE': 'Guten Tag!' } })
+    expect(translator.t('hello')).toBe('Guten Tag!')
+  })
+
   it('should format a number in various languages', (context) => {
     if (!translator) return context.skip()
 
