@@ -392,7 +392,23 @@ function extractTemplate(
 
   let parsed: TranslationTemplate
 
-  const translations = string.split(/(?<!\\)(?:\\\\)*\|/)
+  const translations: string[] = []
+  let start = 0
+  let part = ''
+
+  // An odd backslash escapes the pipe; each pair represents a literal backslash.
+  for (const match of string.matchAll(/(\\*)\|/g)) {
+    const slashes = match[1]!.length
+    part += string.slice(start, match.index) + '\\'.repeat(Math.floor(slashes / 2))
+    if (slashes % 2) {
+      part += '|'
+    } else {
+      translations.push(part)
+      part = ''
+    }
+    start = match.index + match[0].length
+  }
+  translations.push(part + string.slice(start))
   if (translations.length === 1) {
     const [ singular ] = translations
     parsed = { zero: singular!, singular: singular!, plural: singular! }

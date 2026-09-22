@@ -452,6 +452,31 @@ describe('I18N Plugin', () => {
     }, { n: '1' })).toBe('1 Katze')
   })
 
+  it('should unescape literal pipes in each plural variant', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const message = String.raw`none \| zero | one \| single | {n} \| many`
+    const translation = { en: message, de: message }
+
+    expect(translator.tc(translation, 0)).toBe('none | zero')
+    expect(translator.tc(translation, 1)).toBe('one | single')
+    expect(translator.tc(translation, 2)).toBe('2 | many')
+    expect(translator.t({ en: String.raw`A \| B`, de: '' })).toBe('A | B')
+  })
+
+  it('should preserve literal backslashes before pipes', () => {
+    const translator = makeTranslator({ defaultLanguage: 'en' })
+    const slash = String.fromCharCode(92)
+
+    for (const count of [ 2, 3, 4, 5 ]) {
+      const message = `one ${slash.repeat(count)}| many`
+      const translation = { en: message, de: message }
+      const singular = `one ${slash.repeat(Math.floor(count / 2))}`
+
+      expect(translator.tc(translation, 1)).toBe(count % 2 ? `${singular}| many` : singular)
+      expect(translator.tc(translation, 2)).toBe(count % 2 ? `${singular}| many` : 'many')
+    }
+  })
+
   it('should pluralize translations with an option for zero', (context) => {
     if (!translator) return context.skip()
 
