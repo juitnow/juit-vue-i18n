@@ -1,6 +1,6 @@
 {
   "name": "@juit/vue-i18n",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "exports": {
     ".": {
@@ -18,20 +18,20 @@
     "vue": "^3.5.43"
   },
   "devDependencies": {
-    "@microsoft/api-extractor": "^7.59.3",
-    "@plugjs/eslint-plugin": "^0.7.12",
+    "@microsoft/api-extractor": "^7.59.4",
+    "@plugjs/eslint-plugin": "^0.7.13",
     "@types/node": "<25",
     "@vitejs/plugin-vue": "^6.0.9",
     "@vitest/coverage-v8": "^5.0.3",
-    "eslint": "^10.11.0",
+    "eslint": "^10.12.0",
     "eslint-plugin-vue": "^10.11.1",
-    "jsdom": "^30.1.1",
+    "jsdom": "^30.1.2",
     "typescript": "<7",
-    "unplugin-dts": "^1.1.1",
-    "vite": "^8.3.2",
+    "unplugin-dts": "^1.1.2",
+    "vite": "^8.3.4",
     "vitest": "^5.0.3",
     "vue": "^3.5.43",
-    "vue-tsc": "^3.3.11"
+    "vue-tsc": "^3.3.12"
   },
   "author": "Juit Developers <developers@juit.com>",
   "license": "Apache-2.0",
