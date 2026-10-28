@@ -1,4 +1,8 @@
 {
-  "references": [{ "path": "./lib/tsconfig.json" }, { "path": "./tsconfig.node.json" }],
-  "files": []
+  "extends": "./tsconfig.options.json",
+  "compilerOptions": {
+    "lib": ["esnext"],
+    "types": ["node"]
+  },
+  "include": ["*.ts"]
 }
