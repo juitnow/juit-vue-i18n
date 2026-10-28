@@ -1,7 +1,7 @@
+import { i18n, useTranslator } from '@juit/vue-i18n'
 import { JSDOM } from 'jsdom'
 import { createApp, defineComponent, getCurrentInstance } from 'vue'
 
-import { i18n, useTranslator } from '../lib/index.ts'
 import { createJSDomApp } from './jsdom-vue.ts'
 
 describe('I18n Plugin with Vue Apps', () => {

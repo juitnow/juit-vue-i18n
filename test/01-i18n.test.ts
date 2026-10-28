@@ -20,8 +20,6 @@ declare module '@juit/vue-i18n' {
   export interface I18nConfiguration {
     languages: 'de' | 'en'
     translationKeys: 'hello' | 'cats'
-    // dateTimeFormats: keyof typeof dateTimeFormats,
-    // numberFormats: keyof typeof numberFormats,
   }
 }
 
