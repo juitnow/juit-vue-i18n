@@ -1,4 +1,4 @@
-import { expectTypeOf } from 'vitest'
+import { expectTypeOf } from 'expect-type'
 
 import { isISOCountry, isISOCurrency, isISOLanguage, ISO_COUNTRIES, ISO_CURRENCIES, ISO_LANGUAGES } from '../../lib'
 

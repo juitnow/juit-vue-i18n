@@ -1,4 +1,4 @@
-import { expectTypeOf } from 'vitest'
+import { expectTypeOf } from 'expect-type'
 
 import type { ComponentCustomProperties } from 'vue'
 import type {
