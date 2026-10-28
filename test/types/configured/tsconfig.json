@@ -3,7 +3,7 @@
   "compilerOptions": {
     "lib": ["esnext", "dom"],
     "paths": {
-      "@juit/vue-i18n": [ "../../../lib/index.js" ]
+      "@juit/vue-i18n": ["../../../lib/index.js"]
     }
   },
   "include": ["*.ts"]
