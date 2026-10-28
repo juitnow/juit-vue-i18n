@@ -26,6 +26,7 @@ export default plugjs({
 
   async default(): Promise<void> {
     await this.transpile()
+    await this.types()
     await this.lint()
   },
 })
