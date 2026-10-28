@@ -1,5 +1,5 @@
 import { oxc } from '@plugjs/oxc'
-import { banner, plugjs, rmrf } from '@plugjs/plug'
+import { banner, find, plugjs, rmrf } from '@plugjs/plug'
 import { tsbuild } from '@plugjs/tsgo'
 
 export default plugjs({
@@ -17,6 +17,11 @@ export default plugjs({
   async lint(): Promise<void> {
     banner('Linting Sources')
     await oxc({ fix: this.fix === 'true' })
+  },
+
+  async types(): Promise<void> {
+    banner('Checking TypeScript Types')
+    await find('./test/types/*/tsconfig.json').typescriptBuild()
   },
 
   async default(): Promise<void> {
