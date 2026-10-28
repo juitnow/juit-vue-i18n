@@ -260,8 +260,11 @@ export function makeTranslator(options: I18nOptions): Translator {
     n(value?: number | bigint | null, format: string | Intl.NumberFormatOptions = 'default'): string {
       if (value == null) return '' // null or undefined produces an empty string
 
-      const options = typeof format === 'string' ? numberFormats[format] : format
-      if (!options) warn(`NumberFormat alias "${format}" not found`)
+      let options: Intl.NumberFormatOptions | undefined
+      if (typeof format === 'string') {
+        options = numberFormats[format]
+        if (!options) warn(`NumberFormat alias "${format}" not found`)
+      } else options = format
 
       return new Intl.NumberFormat(translator.locale, options).format(value)
     },
@@ -284,8 +287,12 @@ export function makeTranslator(options: I18nOptions): Translator {
       if (input == null || input === '') return ''
 
       const date = input instanceof Date ? input : new Date(input)
-      const options = typeof format === 'string' ? dateTimeFormats[format] : format
-      if (!options) warn(`DateTimeFormat alias "${format}" not found`)
+
+      let options: Intl.DateTimeFormatOptions | undefined
+      if (typeof format === 'string') {
+        options = dateTimeFormats[format]
+        if (!options) warn(`DateTimeFormat alias "${format}" not found`)
+      } else options = format
 
       // Prefer the explicit time zone, then the format's zone, then the default.
       timeZone = timeZone ?? options?.timeZone ?? defaultTimeZone
@@ -308,7 +315,7 @@ export function makeTranslator(options: I18nOptions): Translator {
         return new Intl.DisplayNames(translator.locale, { type: 'region' }).of(code)!
       },
       flag(code: ISOCountry | 'EU' | 'UN'): string {
-        return [...code]
+        return [...code] // oxlint-disable-line typescript/no-misused-spread
           .map((c) => c.codePointAt(0)!)
           .map((n) => 0x1f1a5 + n)
           .map((n) => String.fromCodePoint(n))

@@ -199,7 +199,7 @@ export interface Translations {
  *   shortTime: { timeStyle: 'short' },
  *   mediumTime: { timeStyle: 'medium' },
  *   longTime: { timeStyle: 'long' },
- *   fullTime: { timeStyle: 'full' }
+ *   fullTime: { timeStyle: 'full' },
  * })
  * ```
  */
@@ -217,7 +217,7 @@ export interface DateTimeFormats {
  * ;({
  *   default: {}, // use the default number format
  *   EUR: { style: 'currency', currency: 'EUR' },
- *   USD: { style: 'currency', currency: 'USD' }
+ *   USD: { style: 'currency', currency: 'USD' },
  *   // ... codes from ISO_CURRENCIES are available as aliases
  * })
  * ```
@@ -324,6 +324,7 @@ interface LanguageMatcherConstructor {
  * A language matcher that determines the best matching language from a set
  * of available languages.
  */
+// oxlint-disable-next-line no-redeclare - redeclared as exported class
 export interface LanguageMatcher<T extends readonly [ISOLanguage, ...ISOLanguage[]]> {
   /** The list of available languages, with the first one being the default */
   readonly availableLanguages: Readonly<T>

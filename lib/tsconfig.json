@@ -11,7 +11,7 @@
     // Skip type checking of declaration (Vue wants the DOM)
     "skipLibCheck": true,
     // Store incremental build information in a separate directory
-    "tsBuildInfoFile": "../.build/tsbuildinfo.lib.json"
+    "tsBuildInfoFile": "../.build/tsconfig.lib.tsbuildinfo"
   },
   "include": ["**/*.ts"]
 }
