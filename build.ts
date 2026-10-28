@@ -1,3 +1,5 @@
+import '@plugjs/cov8'
+import '@plugjs/expect5'
 import { oxc } from '@plugjs/oxc'
 import { banner, find, plugjs, rmrf } from '@plugjs/plug'
 import { tsbuild } from '@plugjs/tsgo'
@@ -11,6 +13,30 @@ export default plugjs({
     banner('Transpiling TypeScript Sources')
     await rmrf('./dist')
     await tsbuild('./lib/tsconfig.json')
+  },
+
+  /** Run all tests */
+  async test(): Promise<void> {
+    banner('Running Tests')
+    await rmrf('.coverage-data') // wipe existing coverage data
+    // await tsc('test/tsconfig.json', { noEmit: true }) // type check our tests
+    await find('**/*.test.*', { directory: 'test' }) // find all our test files
+      .test({ coverageDir: '.coverage-data' }) // run tests
+  },
+
+  /** Run tests capturing errors, but always producing coverage */
+  async coverage(): Promise<void> {
+    try {
+      await this.test()
+    } finally {
+      banner('Preparing coverage report')
+      await find('**/*.ts', { directory: 'lib', ignore: 'configs/*.ts' }) //
+        .coverage('.coverage-data', {
+          reportDir: 'coverage',
+          minimumCoverage: 100,
+          minimumFileCoverage: 100,
+        })
+    }
   },
 
   /** Format and lint all our sources (optionally fixing them) */
