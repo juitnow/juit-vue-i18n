@@ -1,17 +1,17 @@
 import { expectTypeOf } from 'expect-type'
 
-import { isISOCountry, isISOCurrency, isISOLanguage, ISO_COUNTRIES, ISO_CURRENCIES, ISO_LANGUAGES } from '../../lib'
+import { isISOCountry, isISOCurrency, isISOLanguage, ISO_COUNTRIES, ISO_CURRENCIES, ISO_LANGUAGES } from '@juit/vue-i18n'
 
 import type {
-  DateTimeFormatAlias, ISOCountry, ISOCurrency, ISOLanguage, Language,
+  DateTimeFormatAlias, ISOCountry, ISOCurrencies, ISOCurrency, ISOLanguage, Language,
   NumberFormatAlias, Translation, TranslationKey, TranslationMessage, Translator,
-} from '../../lib'
+} from '@juit/vue-i18n'
 
 // No I18nConfiguration augmentation is included in this project.
 expectTypeOf<Language>().toEqualTypeOf<ISOLanguage>()
 expectTypeOf<TranslationKey>().toEqualTypeOf<string>()
-expectTypeOf<DateTimeFormatAlias>().toEqualTypeOf<string>()
-expectTypeOf<NumberFormatAlias>().toEqualTypeOf<string>()
+expectTypeOf<DateTimeFormatAlias>().toEqualTypeOf<(string & {}) | "default" | "short" | "medium" | "long" | "full" | "date" | "shortDate" | "mediumDate" | "longDate" | "fullDate" | "time" | "shortTime" | "mediumTime" | "longTime" | "fullTime">()
+expectTypeOf<NumberFormatAlias>().toEqualTypeOf<(string & {}) | "default" | keyof ISOCurrencies>()
 expectTypeOf<Translation['en']>().toEqualTypeOf<TranslationMessage | undefined>()
 expectTypeOf<Translation['fr-FR']>().toEqualTypeOf<TranslationMessage | undefined>()
 expectTypeOf(ISO_LANGUAGES).toEqualTypeOf<readonly ISOLanguage[]>()

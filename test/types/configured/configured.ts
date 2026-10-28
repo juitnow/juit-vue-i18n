@@ -1,10 +1,10 @@
 import { expectTypeOf } from 'expect-type'
 
-import type { ComponentCustomProperties } from 'vue'
 import type {
   DateTimeFormatAlias, DateTimeFormats, ISOCurrency, Language, NumberFormatAlias,
   NumberFormats, Translation, TranslationKey, TranslationMessage, Translations, Translator, useTranslator,
-} from '../../lib'
+} from '@juit/vue-i18n'
+import type { ComponentCustomProperties } from 'vue'
 
 // This project is isolated from the default configuration and runtime tests.
 const translations = {
@@ -14,7 +14,7 @@ const translations = {
 const dateTimeFormats = { customDate: { year: 'numeric' } } as const satisfies DateTimeFormats
 const numberFormats = { speed: { style: 'unit', unit: 'meter-per-second' } } as const satisfies NumberFormats
 
-declare module '../../lib/index' {
+declare module '@juit/vue-i18n' {
   interface I18nConfiguration {
     languages: 'en' | 'de',
     translationKeys: keyof typeof translations,
