@@ -39,8 +39,8 @@ const translations = {
 
 declare module '@juit/vue-i18n' {
   interface I18nConfiguration {
-    languages: 'en' | 'de',
-    translationKeys: keyof typeof translations,
+    languages: 'en' | 'de'
+    translationKeys: keyof typeof translations
   }
 }
 

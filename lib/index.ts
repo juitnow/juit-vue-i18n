@@ -3,10 +3,10 @@ import { inject } from 'vue'
 import { isISOLanguage } from './iso-639.ts'
 import { makeTranslator } from './translator.ts'
 
-import type { App } from 'vue'
-import type { ISOCurrency } from './iso-4217.ts'
 import type { ISOLanguage } from './iso-639.ts'
+import type { ISOCurrency } from './iso-4217.ts'
 import type { Translator } from './translator.ts'
+import type { App } from 'vue'
 
 /* ===== REFERENCE LANGUAGES, COUNTRIES, AND CURRENCIES ====================== */
 
@@ -29,47 +29,43 @@ export type * from './iso-639.ts'
  *
  * The following properties can be defined as unions of string literals:
  *
- * * `languages`: the supported ISO 639-1 language codes. When configured
- *                with a subset of codes, each translation must include
- *                a message for every base language in that subset.
- * * `translationKeys`: the translation keys known by the application.
- *                      Those are the arbitrary keys used to identify the
- *                      messages to be translated with the `t` and `tc`
- *                      methods of `Translator`.
- * * `dateTimeFormats`: the date and time format _aliases_ used by the
- *                      application.
- * * `numberFormats`: the number format _aliases_ used by the application.
+ * - `languages`: the supported ISO 639-1 language codes. When configured with a subset of codes, each translation must
+ *   include a message for every base language in that subset.
+ * - `translationKeys`: the translation keys known by the application. Those are the arbitrary keys used to identify the
+ *   messages to be translated with the `t` and `tc` methods of `Translator`.
+ * - `dateTimeFormats`: the date and time format _aliases_ used by the application.
+ * - `numberFormats`: the number format _aliases_ used by the application.
  *
  * To configure the types, follow the example below:
  *
  * ```ts
  * const translations = {
- *   'hello': { en: 'Hello, world!', de: 'Hallo, Welt!' }
+ *   hello: { en: 'Hello, world!', de: 'Hallo, Welt!' },
  * } as const satisfies Translations
  *
  * const dateTimeFormats = {
- *  // override the default format
- *  default: { dateStyle: 'short', timeStyle: 'short' },
- *  // add a new custom format
- *  custom: {
- *    day: '2-digit',
- *    month: '2-digit',
- *    year: 'numeric',
- *    weekday: 'short',
- *    timeZone: 'UTC',
- *  },
+ *   // override the default format
+ *   default: { dateStyle: 'short', timeStyle: 'short' },
+ *   // add a new custom format
+ *   custom: {
+ *     day: '2-digit',
+ *     month: '2-digit',
+ *     year: 'numeric',
+ *     weekday: 'short',
+ *     timeZone: 'UTC',
+ *   },
  * } as const satisfies DateTimeFormats
  *
  * const numberFormats = {
- *  speed: { style: 'unit', unit: 'kilometer-per-hour' },
+ *   speed: { style: 'unit', unit: 'kilometer-per-hour' },
  * } as const satisfies NumberFormats
  *
  * declare module '@juit/vue-i18n' {
  *   export interface I18nConfiguration {
- *     languages: 'de' | 'en',
- *     translationKeys: keyof typeof translations,
- *     dateTimeFormats: keyof typeof dateTimeFormats,
- *     numberFormats: keyof typeof numberFormats,
+ *     languages: 'de' | 'en'
+ *     translationKeys: keyof typeof translations
+ *     dateTimeFormats: keyof typeof dateTimeFormats
+ *     numberFormats: keyof typeof numberFormats
  *   }
  * }
  * ```
@@ -81,7 +77,7 @@ export interface I18nConfiguration {
 /* ===== FROM CONFIG TO TRANSLATIONS ======================================== */
 
 /** Extract `T[K]` when present and assignable to `R`; otherwise fall back to `R`. */
-type ExtractConfig<T, R, K extends string> = T extends { [ X in K ]: infer V } ? V extends R ? V : R : R
+type ExtractConfig<T, R, K extends string> = T extends { [X in K]: infer V } ? (V extends R ? V : R) : R
 
 /** The languages configured in `I18nConfiguration` or all ISO languages */
 export type Language = ExtractConfig<I18nConfiguration, ISOLanguage, 'languages'>
@@ -90,19 +86,21 @@ export type Language = ExtractConfig<I18nConfiguration, ISOLanguage, 'languages'
 export type TranslationMessage = string | readonly [string, string?, string?]
 
 /** Base languages are required for a configured subset; otherwise all are optional. */
-type BaseTranslation = ISOLanguage extends Language ? {
-  readonly [ key in ISOLanguage ]?: TranslationMessage
-} : {
-  readonly [ key in Language ]: TranslationMessage
-}
+type BaseTranslation = ISOLanguage extends Language
+  ? {
+      readonly [key in ISOLanguage]?: TranslationMessage
+    }
+  : {
+      readonly [key in Language]: TranslationMessage
+    }
 
 /** Optional regional variants of each supported language. */
 type ExtendedTranslation = {
-  readonly [ key in `${Language}-${string}` ]?: TranslationMessage
+  readonly [key in `${Language}-${string}`]?: TranslationMessage
 }
 
 /** Expand the properties of the exported `Translation` type for editor hints. */
-type PrettifyTranslation<T> = { [ l in keyof T ]: T[l] }
+type PrettifyTranslation<T> = { [l in keyof T]: T[l] }
 
 /**
  * A type describing the translations for a given translation key.
@@ -132,10 +130,23 @@ export type TranslationKey = ExtractConfig<I18nConfiguration, string, 'translati
  *
  * When left unconfigured, this type will be `string`.
  */
-export type DateTimeFormatAlias = ExtractConfig<I18nConfiguration, string & {}, 'dateTimeFormats'>
-  | 'default' | 'short' | 'medium' | 'long' | 'full'
-  | 'date' | 'shortDate' | 'mediumDate' | 'longDate' | 'fullDate'
-  | 'time' | 'shortTime' | 'mediumTime' | 'longTime' | 'fullTime'
+export type DateTimeFormatAlias =
+  | ExtractConfig<I18nConfiguration, string & {}, 'dateTimeFormats'>
+  | 'default'
+  | 'short'
+  | 'medium'
+  | 'long'
+  | 'full'
+  | 'date'
+  | 'shortDate'
+  | 'mediumDate'
+  | 'longDate'
+  | 'fullDate'
+  | 'time'
+  | 'shortTime'
+  | 'mediumTime'
+  | 'longTime'
+  | 'fullTime'
 
 /**
  * Supported number format aliases.
@@ -145,8 +156,7 @@ export type DateTimeFormatAlias = ExtractConfig<I18nConfiguration, string & {}, 
  *
  * When left unconfigured, this type will be `string`.
  */
-export type NumberFormatAlias = ExtractConfig<I18nConfiguration, string & {}, 'numberFormats'>
-  | 'default' | ISOCurrency
+export type NumberFormatAlias = ExtractConfig<I18nConfiguration, string & {}, 'numberFormats'> | 'default' | ISOCurrency
 
 /* ===== MODULE INITIALIZATION ============================================== */
 
@@ -160,7 +170,7 @@ export type * from './translator.ts'
  * variants to message strings or plural tuples.
  */
 export interface Translations {
-  readonly [ key: string ]: Translation
+  readonly [key: string]: Translation
 }
 
 /**
@@ -170,7 +180,7 @@ export interface Translations {
  * The default aliases (each can be overridden) are:
  *
  * ```ts
- * {
+ * ;({
  *   default: { dateStyle: 'medium', timeStyle: 'medium' },
  *   short: { dateStyle: 'short', timeStyle: 'short' },
  *   medium: { dateStyle: 'medium', timeStyle: 'medium' },
@@ -189,12 +199,12 @@ export interface Translations {
  *   shortTime: { timeStyle: 'short' },
  *   mediumTime: { timeStyle: 'medium' },
  *   longTime: { timeStyle: 'long' },
- *   fullTime: { timeStyle: 'full' },
- * }
+ *   fullTime: { timeStyle: 'full' }
+ * })
  * ```
  */
 export interface DateTimeFormats {
-  readonly [ key: string ]: Intl.DateTimeFormatOptions
+  readonly [key: string]: Intl.DateTimeFormatOptions
 }
 
 /**
@@ -204,16 +214,16 @@ export interface DateTimeFormats {
  * The default aliases (each can be overridden) are:
  *
  * ```ts
- * {
- *   default: { }, // use the default number format
+ * ;({
+ *   default: {}, // use the default number format
  *   EUR: { style: 'currency', currency: 'EUR' },
- *   USD: { style: 'currency', currency: 'USD' },
+ *   USD: { style: 'currency', currency: 'USD' }
  *   // ... codes from ISO_CURRENCIES are available as aliases
- * }
+ * })
  * ```
  */
 export interface NumberFormats {
-  readonly [ key: string ]: Intl.NumberFormatOptions
+  readonly [key: string]: Intl.NumberFormatOptions
 }
 
 /** The initial language or locale; only its language and region are retained. */
@@ -221,11 +231,11 @@ export type DefaultLanguage = ISOLanguage | `${ISOLanguage}-${string}` | Intl.Lo
 
 /** Options to initialize the I18n plugin */
 export interface I18nOptions {
-  defaultLanguage: DefaultLanguage,
-  defaultTimeZone?: string,
-  translations?: Translations,
-  dateTimeFormats?: DateTimeFormats,
-  numberFormats?: NumberFormats,
+  defaultLanguage: DefaultLanguage
+  defaultTimeZone?: string
+  translations?: Translations
+  dateTimeFormats?: DateTimeFormats
+  numberFormats?: NumberFormats
 }
 
 /* ===== PUBLIC METHODS ===================================================== */
@@ -235,8 +245,7 @@ const injectionSymbol = Symbol.for('@juit/vue-i18n/translator')
 
 /** Initialize the translation system plugin */
 export function i18n(app: App, optionsOrLanguage: Language | I18nOptions): App {
-  const options = typeof optionsOrLanguage === 'string' ?
-    { defaultLanguage: optionsOrLanguage } : optionsOrLanguage
+  const options = typeof optionsOrLanguage === 'string' ? { defaultLanguage: optionsOrLanguage } : optionsOrLanguage
 
   const translator = makeTranslator(options)
 
@@ -252,7 +261,7 @@ export function i18n(app: App, optionsOrLanguage: Language | I18nOptions): App {
 /** Retrieve the translator from the current Vue injection context, or throw if none is provided. */
 export function useTranslator(): Translator {
   const translator = inject(injectionSymbol)
-  if (! translator) throw new Error('No translator found in the Vue app')
+  if (!translator) throw new Error('No translator found in the Vue app')
   return translator as Translator
 }
 
@@ -284,7 +293,7 @@ function normalizeLanguage(language: unknown): ISOLanguage | undefined {
   if (typeof language !== 'string') return undefined
 
   const normalized = language.toLowerCase().split(/[-_]/)[0]
-  if (! normalized) return undefined // empty after normalization
+  if (!normalized) return undefined // empty after normalization
 
   return isISOLanguage(normalized) ? normalized : undefined
 }
@@ -297,7 +306,7 @@ interface LanguageMatcherConstructor {
    * At runtime, the input is normalized. If it does not resolve to a valid
    * ISO language code, an error is thrown.
    */
-  new <L extends ISOLanguage>(availableLanguages: L): LanguageMatcher<[ L ]>
+  new <L extends ISOLanguage>(availableLanguages: L): LanguageMatcher<[L]>
   /**
    * Create a new {@link LanguageMatcher} instance matching the specified set
    * of available languages.
@@ -308,14 +317,14 @@ interface LanguageMatcherConstructor {
    *
    * If no valid ISO languages are provided, an error will be thrown.
    */
-  new <const A extends readonly [ ISOLanguage, ...ISOLanguage[] ]>(availableLanguages: A): LanguageMatcher<A>
+  new <const A extends readonly [ISOLanguage, ...ISOLanguage[]]>(availableLanguages: A): LanguageMatcher<A>
 }
 
 /**
  * A language matcher that determines the best matching language from a set
  * of available languages.
  */
-export interface LanguageMatcher<T extends readonly [ ISOLanguage, ...ISOLanguage[] ]> {
+export interface LanguageMatcher<T extends readonly [ISOLanguage, ...ISOLanguage[]]> {
   /** The list of available languages, with the first one being the default */
   readonly availableLanguages: Readonly<T>
   /** The default language */
@@ -331,32 +340,31 @@ export interface LanguageMatcher<T extends readonly [ ISOLanguage, ...ISOLanguag
    * `en-US` will be normalized to `en`, and `JA` will be normalized to `ja`).
    *
    * @param languages The language or list of languages to match against the
-   *                  available languages.
+   *   available languages.
    * @returns The best matching language from the available languages, or the
-   *          default language if no match is found.
+   * default language if no match is found.
    */
   match(languages: readonly string[] | string | undefined | null): T[number]
 }
 
 /** Implementation of the {@link LanguageMatcher} interface */
-class LanguageMatcherImpl implements LanguageMatcher<readonly [ ISOLanguage, ...ISOLanguage[] ]> {
-  readonly availableLanguages: readonly [ ISOLanguage, ...ISOLanguage[] ]
+class LanguageMatcherImpl implements LanguageMatcher<readonly [ISOLanguage, ...ISOLanguage[]]> {
+  readonly availableLanguages: readonly [ISOLanguage, ...ISOLanguage[]]
   readonly defaultLanguage: ISOLanguage
 
   constructor(availableLanguages: ISOLanguage | readonly ISOLanguage[]) {
-    const languages = typeof availableLanguages === 'string' ?
-      [ availableLanguages ] : availableLanguages
+    const languages = typeof availableLanguages === 'string' ? [availableLanguages] : availableLanguages
 
-    const [ defaultLanguage, ...extraLanguages ] = languages
-        .map(normalizeLanguage) // Normalize each language, returning undefined for invalid entries.
-        .filter((language) => !! language) // Remove invalid entries.
+    const [defaultLanguage, ...extraLanguages] = languages
+      .map(normalizeLanguage) // Normalize each language, returning undefined for invalid entries.
+      .filter((language) => !!language) // Remove invalid entries.
 
     if (!defaultLanguage) {
       throw new Error(`At least one valid ISO language must be provided (${languages.join(', ')})`)
     }
 
     this.defaultLanguage = defaultLanguage
-    this.availableLanguages = [ defaultLanguage, ...extraLanguages ]
+    this.availableLanguages = [defaultLanguage, ...extraLanguages]
   }
 
   match(languages: readonly string[] | string | undefined | null): ISOLanguage {
@@ -364,12 +372,12 @@ class LanguageMatcherImpl implements LanguageMatcher<readonly [ ISOLanguage, ...
     if (!languages) return this.defaultLanguage
 
     // Normalize the input to an array of strings.
-    if (typeof languages === 'string') languages = [ languages ]
+    if (typeof languages === 'string') languages = [languages]
 
     // Iterate over the provided languages in order of preference.
     for (const language of languages) {
       const normalized = normalizeLanguage(language)
-      if (! normalized) continue // empty after normalization
+      if (!normalized) continue // empty after normalization
 
       // Check if the normalized language is available. If so, we match!
       if (this.availableLanguages.includes(normalized)) {

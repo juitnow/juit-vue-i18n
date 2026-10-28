@@ -12,7 +12,6 @@ browsers.
 It also integrates with TypeScript to provide compile-time checks for
 required translation languages and translation keys.
 
-
 ## Table of Contents
 
 - [Installation](#installation)
@@ -32,7 +31,6 @@ required translation languages and translation keys.
 - [Remarks](#remarks)
 - [Legal Stuff](#legal-stuff)
 
-
 ## Installation
 
 As usual, install with npm (or the cool package manager du jour):
@@ -44,8 +42,9 @@ npm install '@juit/vue-i18n'
 Then add the plugin to your Vue app:
 
 ```typescript
-import { createApp } from 'vue'
 import { i18n } from '@juit/vue-i18n'
+import { createApp } from 'vue'
+
 import MyApp from './app.vue'
 
 const app = createApp(MyApp).use(i18n, {
@@ -55,25 +54,23 @@ const app = createApp(MyApp).use(i18n, {
       en: 'Hello, world!',
       de: 'Hallo, Welt!',
     },
-  }
+  },
 })
 ```
-
 
 ## Configuration
 
 The plugin can be configured with a language code string (the default
 language) or an object containing the following options:
 
-* `defaultLanguage`: **(required)** the default language to use; all
-                     translations should be available in this language.
-* `defaultTimeZone`: the default time zone to use when formatting dates
-                     (defaults to the _local_ time zone).
-* `translations`: an object containing the translations for the messages to
-                  translate, keyed by message identifier.
-* `dateTimeFormats`: date and time format aliases used when formatting dates.
-* `numberFormats`: number format aliases used when formatting numbers.
-
+- `defaultLanguage`: **(required)** the default language to use; all
+  translations should be available in this language.
+- `defaultTimeZone`: the default time zone to use when formatting dates
+  (defaults to the _local_ time zone).
+- `translations`: an object containing the translations for the messages to
+  translate, keyed by message identifier.
+- `dateTimeFormats`: date and time format aliases used when formatting dates.
+- `numberFormats`: number format aliases used when formatting numbers.
 
 ### Date and Time Format Aliases
 
@@ -81,8 +78,9 @@ Date and time format aliases can be configured using string keys and
 [`Intl.DateTimeFormatOptions`][5] values:
 
 ```typescript
-import { createApp } from 'vue'
 import { i18n } from '@juit/vue-i18n'
+import { createApp } from 'vue'
+
 import MyApp from './app.vue'
 
 const app = createApp(MyApp).use(i18n, {
@@ -93,7 +91,7 @@ const app = createApp(MyApp).use(i18n, {
       month: '2-digit',
       day: '2-digit',
     },
-  }
+  },
 })
 ```
 
@@ -126,15 +124,15 @@ const dateTimeFormats = {
 }
 ```
 
-
 ### Number Format Aliases
 
 Similarly, number format aliases can be configured using string keys and
 [`Intl.NumberFormatOptions`][4] values:
 
 ```typescript
-import { createApp } from 'vue'
 import { i18n } from '@juit/vue-i18n'
+import { createApp } from 'vue'
+
 import MyApp from './app.vue'
 
 const app = createApp(MyApp).use(i18n, {
@@ -143,8 +141,8 @@ const app = createApp(MyApp).use(i18n, {
     speed: {
       style: 'unit',
       unit: 'kilometer-per-hour',
-    }
-  }
+    },
+  },
 })
 ```
 
@@ -152,7 +150,6 @@ By default, numbers use the locale's standard formatting. Each valid ISO 4217
 currency code (e.g. `EUR`, `USD`, ...) can be used as an alias.
 
 To configure the default number format, use the `default` key.
-
 
 ## Usage
 
@@ -175,7 +172,7 @@ import { useTranslator } from '@juit/vue-i18n'
 
 const translator = useTranslator() // assuming the default locale is "en-US"
 
-translator.region = 'CA'   // we have switched to Canada, and the locale is now "en-CA"
+translator.region = 'CA' // we have switched to Canada, and the locale is now "en-CA"
 translator.language = 'fr' // we have switched to French, and the locale is now "fr-CA"
 
 // or set the full `locale`
@@ -183,7 +180,6 @@ translator.locale = new Intl.Locale('de-AT')
 ```
 
 Because of reactivity, all translations will be updated to the new locale.
-
 
 ## Translating messages
 
@@ -211,10 +207,9 @@ const translator = useTranslator()
 
 const pangram = translator.t({
   en: 'The quick brown fox jumps over the lazy dog',
-  de: 'Franz jagt im komplett verwahrlosten Taxi quer durch Bayern'
+  de: 'Franz jagt im komplett verwahrlosten Taxi quer durch Bayern',
 })
 ```
-
 
 ### Parameterizing translations
 
@@ -240,23 +235,28 @@ For example:
 ```typescript
 const name = 'John Doe'
 
-const string = translator.t({
-  en: 'Your name is {name}',
-  de: 'Ihr Name ist {name}'
-}, { name })
+const string = translator.t(
+  {
+    en: 'Your name is {name}',
+    de: 'Ihr Name ist {name}',
+  },
+  { name },
+)
 // This will result in either "Your name is John Doe" or "Ihr Name ist John Doe"
 ```
 
 Numeric parameters are formatted according to the current locale:
 
 ```typescript
-const string = translator.t({
-  en: 'Score { points } points',
-  de: 'Punktestand { points } Punkte'
-}, { points: 1234.56 })
+const string = translator.t(
+  {
+    en: 'Score { points } points',
+    de: 'Punktestand { points } Punkte',
+  },
+  { points: 1234.56 },
+)
 // This will result in "Score 1,234.56 points" or "Punktestand 1.234,56 Punkte"
 ```
-
 
 ### Pluralization
 
@@ -274,10 +274,13 @@ or pass the number as the second argument to `tc(...)`.
 For example:
 
 ```typescript
-const string = translator.t({
-  en: 'no cats | one cat | {n} cats',
-  de: 'keine Katzen | eine Katze | {n} Katzen'
-}, { n })
+const string = translator.t(
+  {
+    en: 'no cats | one cat | {n} cats',
+    de: 'keine Katzen | eine Katze | {n} Katzen',
+  },
+  { n },
+)
 // This will result in "no cats" or "keine Katzen" when "n" is zero,
 // "one cat" or "eine Katze" when "n" is 1, or
 // "1,234.56 cats" or "1.234,56 Katzen" when "n" is 1234.56
@@ -286,12 +289,14 @@ const string = translator.t({
 This is equivalent to:
 
 ```typescript
-const string = translator.tc({
-  en: 'no cats | one cat | {n} cats',
-  de: 'keine Katzen | eine Katze | {n} Katzen'
-}, n)
+const string = translator.tc(
+  {
+    en: 'no cats | one cat | {n} cats',
+    de: 'keine Katzen | eine Katze | {n} Katzen',
+  },
+  n,
+)
 ```
-
 
 Messages can also use explicit tuples instead of pipe-delimited strings:
 
@@ -314,7 +319,6 @@ pipe splitting and pipe unescaping entirely: `['A | B']` displays `A | B`.
 Tuples work in base and regional translations, inline messages, and
 `updateTranslations(...)`. They are copied when stored, so changing the
 original array later cannot change stored messages or cached results.
-
 
 ## Formatting numbers
 
@@ -345,7 +349,6 @@ as a second parameter to fine-tune the formatting.
 
 The default format can be specified using `numberFormats.default` when
 configuring the plugin.
-
 
 ## Formatting dates
 
@@ -381,7 +384,6 @@ translator.d(new Date(), 'full', 'Europe/Berlin')
 // e.g. Monday, 3 February 2025 at 18:08:03 Central European Standard Time
 ```
 
-
 ## Configuring Types
 
 One of the key features of this package is compile-time safety for all
@@ -393,22 +395,22 @@ To do so, we can _merge_ the `I18nConfiguration` interface of this package
 with our application-specific configuration. The following properties can
 be defined:
 
-* `languages`: the list of supported languages for the application. These
-               are ISO 639-1 language codes, and when specified, _every_
-               translation _must_ include a translation for each.
-* `translationKeys`: the list of translation keys known by the application.
-                     These are the arbitrary keys used to identify the
-                     messages to be translated with the `t` and `tc`
-                     methods of `Translator`.
-* `dateTimeFormats`: the date and time format _aliases_ used by the
-                     application.
-* `numberFormats`: the number format _aliases_ used by the application.
+- `languages`: the list of supported languages for the application. These
+  are ISO 639-1 language codes, and when specified, _every_
+  translation _must_ include a translation for each.
+- `translationKeys`: the list of translation keys known by the application.
+  These are the arbitrary keys used to identify the
+  messages to be translated with the `t` and `tc`
+  methods of `Translator`.
+- `dateTimeFormats`: the date and time format _aliases_ used by the
+  application.
+- `numberFormats`: the number format _aliases_ used by the application.
 
 To configure the types, follow the example below:
 
 ```typescript
 const translations = {
-  hello: { en: 'Hello, world!', de: 'Hallo, Welt!' }
+  hello: { en: 'Hello, world!', de: 'Hallo, Welt!' },
 } as const satisfies Translations
 
 const dateTimeFormats = {
@@ -430,10 +432,10 @@ const numberFormats = {
 
 declare module '@juit/vue-i18n' {
   export interface I18nConfiguration {
-    languages: 'de' | 'en',
-    translationKeys: keyof typeof translations,
-    dateTimeFormats: keyof typeof dateTimeFormats,
-    numberFormats: keyof typeof numberFormats,
+    languages: 'de' | 'en'
+    translationKeys: keyof typeof translations
+    dateTimeFormats: keyof typeof dateTimeFormats
+    numberFormats: keyof typeof numberFormats
   }
 }
 
@@ -453,7 +455,6 @@ In the same way, if we pass any string other than `hello` to `t(...)` or
 
 Date, time, and number format alias types will also be augmented using the
 customizations specified in `dateTimeFormats` and `numberFormats`.
-
 
 ## Updating Translations
 
@@ -492,7 +493,6 @@ translation cache when an update is applied, so subsequent calls to `t(...)`
 and `tc(...)` use the updated messages. Updating translations alone does not
 trigger a Vue component re-render.
 
-
 ## Language Matching
 
 The `LanguageMatcher` class selects a supported language from a user's
@@ -502,13 +502,13 @@ choose the initial language from the browser's `navigator.languages`:
 ```typescript
 import { LanguageMatcher } from '@juit/vue-i18n'
 
-const matcher = new LanguageMatcher([ 'en', 'de', 'ja' ])
+const matcher = new LanguageMatcher(['en', 'de', 'ja'])
 
 matcher.defaultLanguage // 'en'
 matcher.availableLanguages // [ 'en', 'de', 'ja' ]
 
 const app = createApp(MyApp).use(i18n, {
-  defaultLanguage: matcher.match([ ...navigator.languages ]),
+  defaultLanguage: matcher.match([...navigator.languages]),
   translations,
 })
 ```
@@ -525,7 +525,7 @@ regardless of the order of the available languages:
 matcher.match('de') // 'de'
 matcher.match('JA-JP') // 'ja'
 matcher.match('de_AT') // 'de'
-matcher.match([ 'fr', 'ja-JP', 'de' ]) // 'ja'
+matcher.match(['fr', 'ja-JP', 'de']) // 'ja'
 matcher.match('fr') // 'en' (default)
 matcher.match([]) // 'en' (default)
 matcher.match(null) // 'en' (default)
@@ -534,7 +534,6 @@ matcher.match(undefined) // 'en' (default)
 const englishOnly = new LanguageMatcher('en')
 englishOnly.match('de') // 'en'
 ```
-
 
 ## Remarks
 
@@ -548,12 +547,10 @@ Changing `translator.language` preserves the current region: switching from
 `en-CA` to `fr` produces `fr-CA`. Changing `translator.region` preserves the
 language; setting it to `undefined` removes the region.
 
-
 ## Legal Stuff
 
-* [Copyright Notice](NOTICE.md)
-* [License](LICENSE.md)
-
+- [Copyright Notice](NOTICE.md)
+- [License](LICENSE.md)
 
 [1]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale
 [2]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat

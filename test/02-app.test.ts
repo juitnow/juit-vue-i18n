@@ -11,7 +11,16 @@ describe('I18n Plugin with Vue Apps', () => {
     const app = createApp({}).use(i18n, {
       defaultLanguage: 'en',
       dateTimeFormats: {
-        default: { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'UTC' },
+        default: {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+          timeZone: 'UTC',
+        },
         date: { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' },
         time: { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'UTC' },
       },
@@ -32,7 +41,7 @@ describe('I18n Plugin with Vue Apps', () => {
       },
     })
 
-    app.runWithContext(function() {
+    app.runWithContext(function () {
       const translator = useTranslator()
 
       translator.locale = new Intl.Locale('en-US')
@@ -63,7 +72,16 @@ describe('I18n Plugin with Vue Apps', () => {
     const app = createApp(TestComponent).use(i18n, {
       defaultLanguage: 'en',
       dateTimeFormats: {
-        default: { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'UTC' },
+        default: {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+          timeZone: 'UTC',
+        },
         date: { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' },
         time: { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'UTC' },
       },
@@ -102,7 +120,7 @@ describe('I18n Plugin with Vue Apps', () => {
   it('should initialize the plugin with a language', () => {
     const app = createApp({}).use(i18n, 'en')
 
-    app.runWithContext(function() {
+    app.runWithContext(function () {
       const translator = useTranslator()
 
       translator.locale = new Intl.Locale('de-DE') // completely unknown
@@ -113,7 +131,7 @@ describe('I18n Plugin with Vue Apps', () => {
   it('should fail when the plugin is not configured', () => {
     const app = createApp({})
 
-    app.runWithContext(function() {
+    app.runWithContext(function () {
       expect(() => useTranslator()).toThrowError('No translator found in the Vue app')
     })
   })

@@ -2,16 +2,16 @@ import { describe, expect, expectTypeOf, it } from 'vitest'
 
 import { isISOCountry, isISOCurrency, isISOLanguage, ISO_COUNTRIES, ISO_LANGUAGES } from '../lib'
 import { makeTranslator } from '../lib/translator'
-import countries from './data/iso_3166-1.json' with { type: 'json' }
 import languages from './data/iso_639-1.json' with { type: 'json' }
+import countries from './data/iso_3166-1.json' with { type: 'json' }
 
 import type { DateTimeFormatAlias, Language, NumberFormatAlias, TranslationKey, TranslationMessage } from '../lib'
 import type { Translator } from '../lib/translator'
 
 declare module '../lib/index' {
   export interface I18nConfiguration {
-    languages: 'de' | 'en',
-    translationKeys: 'hello' | 'cats',
+    languages: 'de' | 'en'
+    translationKeys: 'hello' | 'cats'
     // dateTimeFormats: keyof typeof dateTimeFormats,
     // numberFormats: keyof typeof numberFormats,
   }
@@ -218,35 +218,59 @@ describe('I18N Plugin', () => {
 
     translator.locale = new Intl.Locale('en-US')
 
-    expect(translator.d(date, 'short')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'short', timeStyle: 'short' }).format(date))
-    expect(translator.d(date, 'medium')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'medium' }).format(date))
-    expect(translator.d(date, 'long')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeStyle: 'long' }).format(date))
-    expect(translator.d(date, 'full')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'full', timeStyle: 'full' }).format(date))
+    expect(translator.d(date, 'short')).toBe(
+      new Intl.DateTimeFormat('en-US', { dateStyle: 'short', timeStyle: 'short' }).format(date),
+    )
+    expect(translator.d(date, 'medium')).toBe(
+      new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'medium' }).format(date),
+    )
+    expect(translator.d(date, 'long')).toBe(
+      new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeStyle: 'long' }).format(date),
+    )
+    expect(translator.d(date, 'full')).toBe(
+      new Intl.DateTimeFormat('en-US', { dateStyle: 'full', timeStyle: 'full' }).format(date),
+    )
 
     expect(translator.d(date, 'shortDate')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(date))
-    expect(translator.d(date, 'mediumDate')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(date))
+    expect(translator.d(date, 'mediumDate')).toBe(
+      new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(date),
+    )
     expect(translator.d(date, 'longDate')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'long' }).format(date))
     expect(translator.d(date, 'fullDate')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'full' }).format(date))
 
     expect(translator.d(date, 'shortTime')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'short' }).format(date))
-    expect(translator.d(date, 'mediumTime')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'medium' }).format(date))
+    expect(translator.d(date, 'mediumTime')).toBe(
+      new Intl.DateTimeFormat('en-US', { timeStyle: 'medium' }).format(date),
+    )
     expect(translator.d(date, 'longTime')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'long' }).format(date))
     expect(translator.d(date, 'fullTime')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'full' }).format(date))
 
     translator.locale = new Intl.Locale('de-DE')
 
-    expect(translator.d(date, 'short')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'short', timeStyle: 'short' }).format(date))
-    expect(translator.d(date, 'medium')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'medium' }).format(date))
-    expect(translator.d(date, 'long')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'long', timeStyle: 'long' }).format(date))
-    expect(translator.d(date, 'full')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'full', timeStyle: 'full' }).format(date))
+    expect(translator.d(date, 'short')).toBe(
+      new Intl.DateTimeFormat('de-DE', { dateStyle: 'short', timeStyle: 'short' }).format(date),
+    )
+    expect(translator.d(date, 'medium')).toBe(
+      new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'medium' }).format(date),
+    )
+    expect(translator.d(date, 'long')).toBe(
+      new Intl.DateTimeFormat('de-DE', { dateStyle: 'long', timeStyle: 'long' }).format(date),
+    )
+    expect(translator.d(date, 'full')).toBe(
+      new Intl.DateTimeFormat('de-DE', { dateStyle: 'full', timeStyle: 'full' }).format(date),
+    )
 
     expect(translator.d(date, 'shortDate')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'short' }).format(date))
-    expect(translator.d(date, 'mediumDate')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(date))
+    expect(translator.d(date, 'mediumDate')).toBe(
+      new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(date),
+    )
     expect(translator.d(date, 'longDate')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'long' }).format(date))
     expect(translator.d(date, 'fullDate')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'full' }).format(date))
 
     expect(translator.d(date, 'shortTime')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'short' }).format(date))
-    expect(translator.d(date, 'mediumTime')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'medium' }).format(date))
+    expect(translator.d(date, 'mediumTime')).toBe(
+      new Intl.DateTimeFormat('de-DE', { timeStyle: 'medium' }).format(date),
+    )
     expect(translator.d(date, 'longTime')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'long' }).format(date))
     expect(translator.d(date, 'fullTime')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'full' }).format(date))
   })
@@ -258,33 +282,37 @@ describe('I18N Plugin', () => {
 
     translator.locale = new Intl.Locale('en-US')
 
-    expect(translator.d(date, {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour12: false,
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      weekday: 'long',
-      timeZone: 'America/New_York',
-      timeZoneName: 'long',
-    })).toBe('Friday, 02/13/2009, 18:31:30 Eastern Standard Time')
+    expect(
+      translator.d(date, {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        weekday: 'long',
+        timeZone: 'America/New_York',
+        timeZoneName: 'long',
+      }),
+    ).toBe('Friday, 02/13/2009, 18:31:30 Eastern Standard Time')
 
     translator.locale = new Intl.Locale('de-DE')
 
-    expect(translator.d(date, {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour12: false,
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      weekday: 'long',
-      timeZone: 'Europe/Berlin',
-      timeZoneName: 'long',
-    })).toBe('Samstag, 14.02.2009, 00:31:30 Mitteleuropäische Normalzeit')
+    expect(
+      translator.d(date, {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        weekday: 'long',
+        timeZone: 'Europe/Berlin',
+        timeZoneName: 'long',
+      }),
+    ).toBe('Samstag, 14.02.2009, 00:31:30 Mitteleuropäische Normalzeit')
   })
 
   it('should format ad date honoring the default time zone', () => {
@@ -322,17 +350,21 @@ describe('I18N Plugin', () => {
     })
     expect(result2).toEqual('13/02/2009, 18:31:30.123 GMT-05:00')
 
-    const result3 = translator.d(date, {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour12: false,
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      fractionalSecondDigits: 3,
-      timeZoneName: 'longOffset',
-    }, 'Asia/Tokyo')
+    const result3 = translator.d(
+      date,
+      {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        fractionalSecondDigits: 3,
+        timeZoneName: 'longOffset',
+      },
+      'Asia/Tokyo',
+    )
     expect(result3).toEqual('14/02/2009, 08:31:30.123 GMT+09:00')
 
     const result4 = translator.d(date, 'short')
@@ -346,7 +378,7 @@ describe('I18N Plugin', () => {
     const date = new Date(1234567890123)
     const format = { hour: '2-digit', minute: '2-digit', timeZone: undefined } as const
 
-    for (const defaultTimeZone of [ 'UTC', 'Asia/Tokyo' ]) {
+    for (const defaultTimeZone of ['UTC', 'Asia/Tokyo']) {
       const translator = makeTranslator({
         defaultLanguage: 'en-GB',
         defaultTimeZone,
@@ -392,17 +424,21 @@ describe('I18N Plugin', () => {
 
     translator.locale = new Intl.Locale('en-US')
 
-    expect(translator.n(1234.56, {
-      style: 'unit',
-      unit: 'meter-per-second',
-    })).toBe('1,234.56 m/s')
+    expect(
+      translator.n(1234.56, {
+        style: 'unit',
+        unit: 'meter-per-second',
+      }),
+    ).toBe('1,234.56 m/s')
 
     translator.locale = new Intl.Locale('de-DE')
 
-    expect(translator.n(1234.56, {
-      style: 'unit',
-      unit: 'meter-per-second',
-    })).toBe('1.234,56 m/s')
+    expect(
+      translator.n(1234.56, {
+        style: 'unit',
+        unit: 'meter-per-second',
+      }),
+    ).toBe('1.234,56 m/s')
   })
 
   it('should parameterize translations', (context) => {
@@ -410,37 +446,67 @@ describe('I18N Plugin', () => {
 
     translator.locale = new Intl.Locale('en-US')
 
-    expect(translator.t({
-      en: ' {n} items {foo} ',
-      de: ' {n} Artikel {foo} ',
-    }, { n: '0', foo: 'Bar' })).toBe('0 items Bar')
+    expect(
+      translator.t(
+        {
+          en: ' {n} items {foo} ',
+          de: ' {n} Artikel {foo} ',
+        },
+        { n: '0', foo: 'Bar' },
+      ),
+    ).toBe('0 items Bar')
 
-    expect(translator.tc({
-      en: ' {n} items {foo} ',
-      de: ' {n} Artikel {foo} ',
-    }, 1)).toBe('1 items {foo}')
+    expect(
+      translator.tc(
+        {
+          en: ' {n} items {foo} ',
+          de: ' {n} Artikel {foo} ',
+        },
+        1,
+      ),
+    ).toBe('1 items {foo}')
 
-    expect(translator.t({
-      en: ' {n} items {foo} ',
-      de: ' {n} Artikel {foo} ',
-    }, { n: null, foo: {} } as any)).toBe('items [object Object]') // edge case
+    expect(
+      translator.t(
+        {
+          en: ' {n} items {foo} ',
+          de: ' {n} Artikel {foo} ',
+        },
+        { n: null, foo: {} } as any,
+      ),
+    ).toBe('items [object Object]') // edge case
 
     translator.locale = new Intl.Locale('de-DE')
 
-    expect(translator.t({
-      en: ' {n} items {foo} ',
-      de: ' {n} Artikel {foo} ',
-    }, { n: '0', foo: 'Bar' })).toBe('0 Artikel Bar')
+    expect(
+      translator.t(
+        {
+          en: ' {n} items {foo} ',
+          de: ' {n} Artikel {foo} ',
+        },
+        { n: '0', foo: 'Bar' },
+      ),
+    ).toBe('0 Artikel Bar')
 
-    expect(translator.tc({
-      en: ' {n} items {foo} ',
-      de: ' {n} Artikel {foo} ',
-    }, 1)).toBe('1 Artikel {foo}')
+    expect(
+      translator.tc(
+        {
+          en: ' {n} items {foo} ',
+          de: ' {n} Artikel {foo} ',
+        },
+        1,
+      ),
+    ).toBe('1 Artikel {foo}')
 
-    expect(translator.t({
-      en: ' {n} items {foo} ',
-      de: ' {n} Artikel {foo} ',
-    }, { n: null, foo: {} } as any )).toBe('Artikel [object Object]') // edge case
+    expect(
+      translator.t(
+        {
+          en: ' {n} items {foo} ',
+          de: ' {n} Artikel {foo} ',
+        },
+        { n: null, foo: {} } as any,
+      ),
+    ).toBe('Artikel [object Object]') // edge case
   })
 
   it('should replace adjacent parameters and parameters after newlines', () => {
@@ -454,7 +520,10 @@ describe('I18N Plugin', () => {
     const translator = makeTranslator({ defaultLanguage: 'en' })
     const message = '{x} {y}'
 
-    for (const params of [ { x: '{y}', y: 'Alice' }, { y: 'Alice', x: '{y}' } ]) {
+    for (const params of [
+      { x: '{y}', y: 'Alice' },
+      { y: 'Alice', x: '{y}' },
+    ]) {
       expect(translator.t({ en: message, de: message }, params)).toBe('{y} Alice')
     }
   })
@@ -475,7 +544,7 @@ describe('I18N Plugin', () => {
   it('should treat parameter names as literal strings', () => {
     const translator = makeTranslator({ defaultLanguage: 'en' })
 
-    for (const name of [ 'a.b', '[', 'a+b', '(x)', 'a$', 'x\\y', 'x{y}' ]) {
+    for (const name of ['a.b', '[', 'a+b', '(x)', 'a$', 'x\\y', 'x{y}']) {
       const message = `{${name}}{${name}}`
       expect(translator.t({ en: message, de: message }, { [name]: 'A' })).toBe('AA')
     }
@@ -500,12 +569,8 @@ describe('I18N Plugin', () => {
       const translation = { en: message, de: message }
       const prefix = `prefix ${slash.repeat(Math.floor(count / 2))}`
 
-      expect(translator.t(translation, { name: 'Alice' })).toBe(
-          prefix + (count % 2 ? '{ name }' : 'Alice') + 'Alice',
-      )
-      expect(translator.t(translation)).toBe(
-          prefix + (count % 2 ? '{ name }' : '{name}') + '{name}',
-      )
+      expect(translator.t(translation, { name: 'Alice' })).toBe(prefix + (count % 2 ? '{ name }' : 'Alice') + 'Alice')
+      expect(translator.t(translation)).toBe(prefix + (count % 2 ? '{ name }' : '{name}') + '{name}')
     }
   })
 
@@ -531,14 +596,18 @@ describe('I18N Plugin', () => {
     const translation = { en: message, de: message }
 
     expect(translator.t(translation)).toBe('{constructor} {toString} {__proto__}')
-    expect(translator.t(translation, {
-      ['constructor']: 'C', ['toString']: 'T', ['__proto__']: 'P',
-    })).toBe('C T P')
+    expect(
+      translator.t(translation, {
+        ['constructor']: 'C',
+        ['toString']: 'T',
+        ['__proto__']: 'P',
+      }),
+    ).toBe('C T P')
   })
 
   it('should preserve malformed placeholders and normalize missing balanced placeholders', () => {
     const translator = makeTranslator({ defaultLanguage: 'en' })
-    for (const message of [ 'before {name', 'after name}', 'before {x{y}' ]) {
+    for (const message of ['before {name', 'after name}', 'before {x{y}']) {
       expect(translator.t({ en: message, de: message }, { name: 'Alice', y: 'Y' })).toBe(message)
     }
 
@@ -562,27 +631,47 @@ describe('I18N Plugin', () => {
 
     translator.locale = new Intl.Locale('en-US')
 
-    expect(translator.t({
-      en: ' {n} cat | {n} cats ',
-      de: ' {n} Katze | {n} Katzen ',
-    }, { n: '-1' })).toBe('-1 cats')
+    expect(
+      translator.t(
+        {
+          en: ' {n} cat | {n} cats ',
+          de: ' {n} Katze | {n} Katzen ',
+        },
+        { n: '-1' },
+      ),
+    ).toBe('-1 cats')
 
-    expect(translator.t({
-      en: ' {n} cat | {n} cats ',
-      de: ' {n} Katze | {n} Katzen ',
-    }, { n: '1' })).toBe('1 cat')
+    expect(
+      translator.t(
+        {
+          en: ' {n} cat | {n} cats ',
+          de: ' {n} Katze | {n} Katzen ',
+        },
+        { n: '1' },
+      ),
+    ).toBe('1 cat')
 
     translator.locale = new Intl.Locale('de-DE')
 
-    expect(translator.t({
-      en: ' {n} cat | {n} cats ',
-      de: ' {n} Katze | {n} Katzen ',
-    }, { n: '-1' })).toBe('-1 Katzen')
+    expect(
+      translator.t(
+        {
+          en: ' {n} cat | {n} cats ',
+          de: ' {n} Katze | {n} Katzen ',
+        },
+        { n: '-1' },
+      ),
+    ).toBe('-1 Katzen')
 
-    expect(translator.t({
-      en: ' {n} cat | {n} cats ',
-      de: ' {n} Katze | {n} Katzen ',
-    }, { n: '1' })).toBe('1 Katze')
+    expect(
+      translator.t(
+        {
+          en: ' {n} cat | {n} cats ',
+          de: ' {n} Katze | {n} Katzen ',
+        },
+        { n: '1' },
+      ),
+    ).toBe('1 Katze')
   })
 
   it('should unescape literal pipes in each plural variant', () => {
@@ -600,7 +689,7 @@ describe('I18N Plugin', () => {
     const translator = makeTranslator({ defaultLanguage: 'en' })
     const slash = String.fromCharCode(92)
 
-    for (const count of [ 2, 3, 4, 5 ]) {
+    for (const count of [2, 3, 4, 5]) {
       const message = `one ${slash.repeat(count)}| many`
       const translation = { en: message, de: message }
       const singular = `one ${slash.repeat(Math.floor(count / 2))}`
@@ -612,14 +701,14 @@ describe('I18N Plugin', () => {
 
   it('should accept readonly translation tuples with one, two, or three variants', () => {
     const translator = makeTranslator({ defaultLanguage: 'en' })
-    const cases: { message: TranslationMessage, expected: readonly string[] }[] = [
-      { message: [ 'same' ] as const, expected: [ 'same', 'same', 'same' ] },
-      { message: [ 'one', '{n} many' ] as const, expected: [ '0 many', 'one', '2 many' ] },
-      { message: [ 'none', 'one', '{n} many' ] as const, expected: [ 'none', 'one', '2 many' ] },
+    const cases: { message: TranslationMessage; expected: readonly string[] }[] = [
+      { message: ['same'] as const, expected: ['same', 'same', 'same'] },
+      { message: ['one', '{n} many'] as const, expected: ['0 many', 'one', '2 many'] },
+      { message: ['none', 'one', '{n} many'] as const, expected: ['none', 'one', '2 many'] },
     ]
 
     for (const { message, expected } of cases) {
-      for (const n of [ 0, 1, 2 ]) {
+      for (const n of [0, 1, 2]) {
         expect(translator.tc({ en: message, de: message }, n)).toBe(expected[n])
       }
     }
@@ -627,7 +716,7 @@ describe('I18N Plugin', () => {
 
   it('should keep pipes literal in tuples while parsing placeholders and escapes', () => {
     const translator = makeTranslator({ defaultLanguage: 'en' })
-    const message = [ 'one | item', String.raw`{n} \| items \{ name }` ] as const
+    const message = ['one | item', String.raw`{n} \| items \{ name }`] as const
 
     expect(translator.tc({ en: message, de: message }, 1)).toBe('one | item')
     expect(translator.tc({ en: message, de: message }, 2, { name: 'ignored' })).toBe(String.raw`2 \| items { name }`)
@@ -635,33 +724,35 @@ describe('I18N Plugin', () => {
 
   it('should omit trailing undefined tuple slots and preserve empty variants', () => {
     const translator = makeTranslator({ defaultLanguage: 'en' })
-    const cases: { message: TranslationMessage, expected: readonly string[] }[] = [
-      { message: [ 'same', undefined ], expected: [ 'same', 'same', 'same' ] },
-      { message: [ 'same', undefined, undefined ], expected: [ 'same', 'same', 'same' ] },
-      { message: [ 'one', 'many', undefined ], expected: [ 'many', 'one', 'many' ] },
-      { message: [ '', 'one', '' ], expected: [ '', 'one', '' ] },
-      { message: [ '' ], expected: [ '', '', '' ] },
+    const cases: { message: TranslationMessage; expected: readonly string[] }[] = [
+      { message: ['same', undefined], expected: ['same', 'same', 'same'] },
+      { message: ['same', undefined, undefined], expected: ['same', 'same', 'same'] },
+      { message: ['one', 'many', undefined], expected: ['many', 'one', 'many'] },
+      { message: ['', 'one', ''], expected: ['', 'one', ''] },
+      { message: [''], expected: ['', '', ''] },
     ]
 
     for (const { message, expected } of cases) {
-      for (const n of [ 0, 1, 2 ]) {
+      for (const n of [0, 1, 2]) {
         expect(translator.tc({ en: message, de: 'fallback' }, n)).toBe(expected[n])
       }
     }
   })
 
   it('should reject tuple gaps when initializing, updating, or translating inline', () => {
-    const invalid = [ 'none', undefined, 'many' ] as const
+    const invalid = ['none', undefined, 'many'] as const
     const translator = makeTranslator({ defaultLanguage: 'en' })
 
-    expect(() => makeTranslator({ defaultLanguage: 'en', translations: { hello: { en: invalid, de: '' } } })).toThrow(TypeError)
+    expect(() => makeTranslator({ defaultLanguage: 'en', translations: { hello: { en: invalid, de: '' } } })).toThrow(
+      TypeError,
+    )
     expect(() => translator.utils.updateTranslations({ hello: { en: invalid } })).toThrow(TypeError)
     expect(() => translator.t({ en: invalid, de: '' })).toThrow(TypeError)
   })
 
   it('should reject invalid tuple lengths from untyped input', () => {
     const translator = makeTranslator({ defaultLanguage: 'en' })
-    for (const message of [ [], [ 'a', 'b', 'c', 'd' ] ]) {
+    for (const message of [[], ['a', 'b', 'c', 'd']]) {
       expect(() => translator.t({ en: message as unknown as TranslationMessage, de: '' })).toThrow(TypeError)
     }
   })
@@ -672,10 +763,12 @@ describe('I18N Plugin', () => {
       translations: { hello: { en: 'original', de: '' } },
     })
     expect(translator.t('hello')).toBe('original')
-    expect(() => translator.utils.updateTranslations({
-      hello: { en: 'partial update' },
-      cats: { en: [ 'none', undefined, 'many' ] },
-    })).toThrow(TypeError)
+    expect(() =>
+      translator.utils.updateTranslations({
+        hello: { en: 'partial update' },
+        cats: { en: ['none', undefined, 'many'] },
+      }),
+    ).toThrow(TypeError)
 
     // Force the next lookup to read stored messages rather than the old cache.
     translator.utils.updateTranslations({ cats: { en: 'cats' } })
@@ -683,7 +776,7 @@ describe('I18N Plugin', () => {
   })
 
   it('should copy tuples on initialization and updates, including before cache population', () => {
-    const original: [string, string] = [ 'one', 'many' ]
+    const original: [string, string] = ['one', 'many']
     const translator = makeTranslator({
       defaultLanguage: 'en',
       translations: { hello: { en: original, de: original } },
@@ -695,7 +788,7 @@ describe('I18N Plugin', () => {
     translator.language = 'de'
     expect(translator.tc('hello', 1)).toBe('one')
 
-    const update: [string, string, string] = [ 'zero updated', 'one updated', 'many updated' ]
+    const update: [string, string, string] = ['zero updated', 'one updated', 'many updated']
     translator.utils.updateTranslations({ hello: { en: update } })
     update.fill('mutated')
     translator.language = 'en'
@@ -710,14 +803,14 @@ describe('I18N Plugin', () => {
   it('should use tuples in regional translations and fall back to string messages', () => {
     const translator = makeTranslator({
       defaultLanguage: 'en-US',
-      translations: { hello: { 'en': 'one | many', 'de': '', 'de-AT': [ 'eins', 'viele' ] as const } },
+      translations: { hello: { 'en': 'one | many', 'de': '', 'de-AT': ['eins', 'viele'] as const } },
     })
 
     translator.locale = new Intl.Locale('de-AT')
     expect(translator.tc('hello', 2)).toBe('viele')
     translator.region = 'DE'
     expect(translator.tc('hello', 2)).toBe('many')
-    translator.utils.updateTranslations({ hello: { 'de-DE': [ 'eines', 'mehrere' ] as const } })
+    translator.utils.updateTranslations({ hello: { 'de-DE': ['eines', 'mehrere'] as const } })
     expect(translator.tc('hello', 2)).toBe('mehrere')
   })
 
@@ -726,54 +819,103 @@ describe('I18N Plugin', () => {
 
     translator.locale = new Intl.Locale('en-US')
 
-    expect(translator.tc({
-      en: ' no cats | one cat | {n} cats ',
-      de: ' keine Katzen | eine Katze | {n} Katzen ',
-    }, 0)).toBe('no cats')
+    expect(
+      translator.tc(
+        {
+          en: ' no cats | one cat | {n} cats ',
+          de: ' keine Katzen | eine Katze | {n} Katzen ',
+        },
+        0,
+      ),
+    ).toBe('no cats')
 
-    expect(translator.tc({
-      en: ' no cats | one cat \\{n} | {n} cats ',
-      de: ' keine Katzen | eine Katze \\{n} | {n} Katzen ',
-    }, 1)).toBe('one cat {n}')
+    expect(
+      translator.tc(
+        {
+          en: ' no cats | one cat \\{n} | {n} cats ',
+          de: ' keine Katzen | eine Katze \\{n} | {n} Katzen ',
+        },
+        1,
+      ),
+    ).toBe('one cat {n}')
 
-    expect(translator.tc({
-      en: ' no cats | one cat | {n} cats ',
-      de: ' keine Katzen | eine Katze | {n} Katzen ',
-    }, 2)).toBe('2 cats')
+    expect(
+      translator.tc(
+        {
+          en: ' no cats | one cat | {n} cats ',
+          de: ' keine Katzen | eine Katze | {n} Katzen ',
+        },
+        2,
+      ),
+    ).toBe('2 cats')
 
-    expect(translator.tc({
-      en: ' no cats | one cat | {n} cats ',
-      de: ' keine Katzen | eine Katze | {n} Katzen ',
-    }, 1234.56)).toBe('1,234.56 cats')
+    expect(
+      translator.tc(
+        {
+          en: ' no cats | one cat | {n} cats ',
+          de: ' keine Katzen | eine Katze | {n} Katzen ',
+        },
+        1234.56,
+      ),
+    ).toBe('1,234.56 cats')
 
     translator.locale = new Intl.Locale('de-DE')
 
-    expect(translator.tc({
-      en: ' no cats | one cat | {n} cats ',
-      de: ' keine Katzen | eine Katze | {n} Katzen ',
-    }, 0)).toBe('keine Katzen')
+    expect(
+      translator.tc(
+        {
+          en: ' no cats | one cat | {n} cats ',
+          de: ' keine Katzen | eine Katze | {n} Katzen ',
+        },
+        0,
+      ),
+    ).toBe('keine Katzen')
 
-    expect(translator.tc({
-      en: ' no cats | one cat \\{n} | {n} cats ',
-      de: ' keine Katzen | eine Katze \\{n} | {n} Katzen ',
-    }, 1)).toBe('eine Katze {n}')
+    expect(
+      translator.tc(
+        {
+          en: ' no cats | one cat \\{n} | {n} cats ',
+          de: ' keine Katzen | eine Katze \\{n} | {n} Katzen ',
+        },
+        1,
+      ),
+    ).toBe('eine Katze {n}')
 
-    expect(translator.tc({
-      en: ' no cats | one cat | {n} cats ',
-      de: ' keine Katzen | eine Katze | {n} Katzen ',
-    }, 2)).toBe('2 Katzen')
+    expect(
+      translator.tc(
+        {
+          en: ' no cats | one cat | {n} cats ',
+          de: ' keine Katzen | eine Katze | {n} Katzen ',
+        },
+        2,
+      ),
+    ).toBe('2 Katzen')
 
-    expect(translator.tc({
-      en: ' no cats | one cat | {n} cats ',
-      de: ' keine Katzen | eine Katze | {n} Katzen ',
-    }, 1234.56)).toBe('1.234,56 Katzen')
+    expect(
+      translator.tc(
+        {
+          en: ' no cats | one cat | {n} cats ',
+          de: ' keine Katzen | eine Katze | {n} Katzen ',
+        },
+        1234.56,
+      ),
+    ).toBe('1.234,56 Katzen')
   })
 
   it('should configure default formats', () => {
     const translator = makeTranslator({
       defaultLanguage: 'en',
       dateTimeFormats: {
-        default: { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'UTC' },
+        default: {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+          timeZone: 'UTC',
+        },
         date: { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' },
         time: { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'UTC' },
       },
@@ -876,7 +1018,7 @@ describe('I18N Plugin', () => {
 
     it('should return valid country names for each of our countries', () => {
       const translator = makeTranslator({ defaultLanguage: 'en' })
-      for (const country of [ ...ISO_COUNTRIES, 'EU', 'UN' ] as const) {
+      for (const country of [...ISO_COUNTRIES, 'EU', 'UN'] as const) {
         const value = translator.utils.country(country)
         expect(value).toBeTypeOf('string')
         expect(value.length, `Code: ${country}`).toBeGreaterThan(2) // no codes
@@ -894,14 +1036,16 @@ describe('I18N Plugin', () => {
 
     it('should return valid flags for each of our countries', () => {
       const translator = makeTranslator({ defaultLanguage: 'en' })
-      for (const country of [ ...ISO_COUNTRIES, 'EU', 'UN' ] as const) {
+      for (const country of [...ISO_COUNTRIES, 'EU', 'UN'] as const) {
         const value = translator.utils.flag(country)
         expect(value, `Code: ${country}`).toBeTypeOf('string')
         expect(value.length, `Code: ${country}`).toEqual(4) // 2 codepoints
-        expect([
-          String.fromCharCode(value.codePointAt(0)! - 0x1f1a5),
-          String.fromCharCode(value.codePointAt(2)! - 0x1f1a5),
-        ].join('')).toEqual(country)
+        expect(
+          [
+            String.fromCharCode(value.codePointAt(0)! - 0x1f1a5),
+            String.fromCharCode(value.codePointAt(2)! - 0x1f1a5),
+          ].join(''),
+        ).toEqual(country)
       }
     })
   })
@@ -912,8 +1056,8 @@ describe('I18N Plugin', () => {
         defaultLanguage: 'en',
         translations: {
           hello: {
-            'en': 'Hello, World!',
-            'de': 'Hallo, Welt!',
+            en: 'Hello, World!',
+            de: 'Hallo, Welt!',
           },
         },
       })

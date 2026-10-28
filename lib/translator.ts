@@ -1,8 +1,8 @@
 import { computed, reactive, shallowRef, warn, watch } from 'vue'
 
+import { ISO_LANGUAGES } from './iso-639.ts'
 import { ISO_COUNTRIES } from './iso-3166.ts'
 import { ISO_CURRENCIES } from './iso-4217.ts'
-import { ISO_LANGUAGES } from './iso-639.ts'
 
 import type {
   DateTimeFormatAlias,
@@ -30,7 +30,7 @@ import type { ISOLanguage } from './iso-639.ts'
  * before being interpolated into the message.
  */
 export interface TranslationParams {
-  [ key: string ]: string | number
+  [key: string]: string | number
 }
 
 /**
@@ -75,11 +75,10 @@ export interface Translator {
    *
    * String messages can contain variants separated by unescaped pipes:
    *
-   * * `" one apple | {n} apples "` when _two_ translations are separated by a
-   *   pipe, the first is used for singular, and the second for zero or plural.
-   * * `" no apples | one apple | {n} apples "` when _three_ translations are
-   *   separated by a pipe, the first will be used for zero, the second for
-   *   singular, and the third for plural.
+   * - `" one apple | {n} apples "` when _two_ translations are separated by a pipe, the first is used for singular, and
+   *   the second for zero or plural.
+   * - `" no apples | one apple | {n} apples "` when _three_ translations are separated by a pipe, the first will be used
+   *   for zero, the second for singular, and the third for plural.
    *
    * Messages can also be readonly tuples: `[message]`, `[singular, plural]`,
    * or `[zero, singular, plural]`. Pipes inside tuple elements are literal;
@@ -99,7 +98,7 @@ export interface Translator {
    * object. Omitting it selects the `default` alias. A null or undefined
    * value produces an empty string.
    */
-  n(value?: number | bigint | null  , format?: NumberFormatAlias | Intl.NumberFormatOptions): string
+  n(value?: number | bigint | null, format?: NumberFormatAlias | Intl.NumberFormatOptions): string
 
   /**
    * Format a date and time according to the current locale.
@@ -145,13 +144,13 @@ export interface Translator {
 /* ===== TRANSLATOR IMPLEMENTATION ========================================== */
 
 function checkLocale(locale: Intl.Locale): void {
-  if (! ISO_LANGUAGES.includes(locale.language as any)) {
+  if (!ISO_LANGUAGES.includes(locale.language as any)) {
     warn(`Unknown language code "${locale.language}"`)
   }
 
-  if (! locale.region) return
+  if (!locale.region) return
 
-  if (! ISO_COUNTRIES.includes(locale.region as any)) {
+  if (!ISO_COUNTRIES.includes(locale.region as any)) {
     warn(`Unknown region code "${locale.region}"`)
   }
 }
@@ -159,21 +158,20 @@ function checkLocale(locale: Intl.Locale): void {
 /** Create a _reactive_ translator object from the given options */
 export function makeTranslator(options: I18nOptions): Translator {
   // Parse the configured default language, or use the supplied locale.
-  const defaultLocale: Intl.Locale = typeof options.defaultLanguage === 'string' ?
-    new Intl.Locale(options.defaultLanguage) :
-    options.defaultLanguage
+  const defaultLocale: Intl.Locale =
+    typeof options.defaultLanguage === 'string' ? new Intl.Locale(options.defaultLanguage) : options.defaultLanguage
 
   // Retain only the default language and optional region.
-  const defaultLanguage = defaultLocale.region ?
-    `${defaultLocale.language}-${defaultLocale.region}` :
-    defaultLocale.language
+  const defaultLanguage = defaultLocale.region
+    ? `${defaultLocale.language}-${defaultLocale.region}`
+    : defaultLocale.language
 
   // Default time zone
   const defaultTimeZone = options.defaultTimeZone
 
   // Snapshot the translations, including copies of message tuples.
   const translations: InternalTranslations = new Map()
-  Object.entries(options.translations ?? {}).forEach(([ key, value ]) => {
+  Object.entries(options.translations ?? {}).forEach(([key, value]) => {
     translations.set(key, copyTranslation(value))
   })
 
@@ -206,10 +204,13 @@ export function makeTranslator(options: I18nOptions): Translator {
   // Use a null prototype so inherited properties cannot resolve as format aliases.
   const numberFormats: NumberFormats = Object.assign(Object.create(null), {
     // Create currency aliases for the codes reported by the runtime.
-    ...ISO_CURRENCIES.reduce((formats, currency) => {
-      formats[currency] = { style: 'currency', currency }
-      return formats
-    }, {} as Record<string, Intl.NumberFormatOptions>),
+    ...ISO_CURRENCIES.reduce(
+      (formats, currency) => {
+        formats[currency] = { style: 'currency', currency }
+        return formats
+      },
+      {} as Record<string, Intl.NumberFormatOptions>,
+    ),
     // Add the default number format
     default: {},
     // Overrides and custom formats
@@ -223,10 +224,10 @@ export function makeTranslator(options: I18nOptions): Translator {
   // Try the current regional variant and base language, then the default equivalents.
   const languages = computed(() => {
     const { language, region } = locale.value
-    const order: string[] = [ language ]
+    const order: string[] = [language]
     if (region) order.unshift(`${language}-${region}`)
     if (language !== defaultLanguage) order.push(defaultLanguage)
-    if (! order.includes(defaultLocale.language)) order.push(defaultLocale.language)
+    if (!order.includes(defaultLocale.language)) order.push(defaultLocale.language)
     return order as any as LanguageKeys
   })
 
@@ -256,11 +257,11 @@ export function makeTranslator(options: I18nOptions): Translator {
       translator.locale = new Intl.Locale(translator.language, { region: value || undefined })
     },
 
-    n(value?: number | bigint | null  , format: string | Intl.NumberFormatOptions = 'default'): string {
+    n(value?: number | bigint | null, format: string | Intl.NumberFormatOptions = 'default'): string {
       if (value == null) return '' // null or undefined produces an empty string
 
       const options = typeof format === 'string' ? numberFormats[format] : format
-      if (! options) warn(`NumberFormat alias "${format}" not found`)
+      if (!options) warn(`NumberFormat alias "${format}" not found`)
 
       return new Intl.NumberFormat(translator.locale, options).format(value)
     },
@@ -275,12 +276,16 @@ export function makeTranslator(options: I18nOptions): Translator {
       return replaceParams(template, { n, ...params }, format)
     },
 
-    d(input?: DateInput, format: DateTimeFormatAlias | Intl.DateTimeFormatOptions = 'default', timeZone?: string): string {
-      if ((input == null) || (input === '')) return ''
+    d(
+      input?: DateInput,
+      format: DateTimeFormatAlias | Intl.DateTimeFormatOptions = 'default',
+      timeZone?: string,
+    ): string {
+      if (input == null || input === '') return ''
 
       const date = input instanceof Date ? input : new Date(input)
       const options = typeof format === 'string' ? dateTimeFormats[format] : format
-      if (! options) warn(`DateTimeFormat alias "${format}" not found`)
+      if (!options) warn(`DateTimeFormat alias "${format}" not found`)
 
       // Prefer the explicit time zone, then the format's zone, then the default.
       timeZone = timeZone ?? options?.timeZone ?? defaultTimeZone
@@ -303,23 +308,25 @@ export function makeTranslator(options: I18nOptions): Translator {
         return new Intl.DisplayNames(translator.locale, { type: 'region' }).of(code)!
       },
       flag(code: ISOCountry | 'EU' | 'UN'): string {
-        return [ ...code ]
-            .map((c) => c.codePointAt(0)!)
-            .map((n) => 0x1f1a5 + n)
-            .map((n) => String.fromCodePoint(n))
-            .join('')
+        return [...code]
+          .map((c) => c.codePointAt(0)!)
+          .map((n) => 0x1f1a5 + n)
+          .map((n) => String.fromCodePoint(n))
+          .join('')
       },
       updateTranslations(updates: Partial<Record<TranslationKey, Partial<Translation>>>): void {
         // Validate and copy all inputs before changing stored messages or their cache.
-        const copiedUpdates = Object.entries(updates).map(([ key, translation ]) => [ key, copyTranslation(translation) ] as const)
+        const copiedUpdates = Object.entries(updates).map(
+          ([key, translation]) => [key, copyTranslation(translation)] as const,
+        )
         let updated = false
 
-        for (const [ key, translation ] of copiedUpdates) {
-          for (const [ lang, value ] of translation) {
-            if (! value) continue
+        for (const [key, translation] of copiedUpdates) {
+          for (const [lang, value] of translation) {
+            if (!value) continue
 
             let translation = translations.get(key)
-            if (! translation) translation = new Map()
+            if (!translation) translation = new Map()
             translation.set(lang, value)
             translations.set(key, translation)
             updated = true
@@ -339,20 +346,20 @@ export function makeTranslator(options: I18nOptions): Translator {
 
 /* ===== TRANSLATION UTILITIES ============================================== */
 
-type LanguageKeys = readonly [ string, ...string[] ]
+type LanguageKeys = readonly [string, ...string[]]
 type InternalMessage = string | string[]
 type InternalTranslation = Map<string, InternalMessage | undefined>
 type InternalTranslations = Map<string, InternalTranslation>
 type TemplatePart = string | { param: string }
-type TranslationTemplate = { zero: TemplatePart[], singular: TemplatePart[], plural: TemplatePart[] }
+type TranslationTemplate = { zero: TemplatePart[]; singular: TemplatePart[]; plural: TemplatePart[] }
 
 /** Copy and validate message tuples, allowing omitted trailing variants but no gaps. */
 function copyMessage(message: TranslationMessage | undefined): InternalMessage | undefined {
   if (message == null || typeof message === 'string') return message
 
-  const variants = [ ...message ]
+  const variants = [...message]
   while (variants.length && variants[variants.length - 1] === undefined) variants.pop()
-  if (! variants.length || variants.length > 3) {
+  if (!variants.length || variants.length > 3) {
     throw new TypeError('Translation tuples must contain one to three strings without gaps')
   }
   return variants.map((variant) => {
@@ -365,41 +372,44 @@ function copyMessage(message: TranslationMessage | undefined): InternalMessage |
 
 /** Snapshot a translation, including any explicit plural tuples. */
 function copyTranslation(translation: Partial<Translation> | undefined): InternalTranslation {
-  return new Map(Object.entries(translation ?? {}).map(([ language, message ]) => [ language, copyMessage(message) ] as const))
+  return new Map(
+    Object.entries(translation ?? {}).map(([language, message]) => [language, copyMessage(message)] as const),
+  )
 }
 
 /**
  * Cached parsed translation templates.
  *
  * The keys are:
- * 1) the translations instance (WeakMap key)
- * 2) the current language and optional region (first entry in the fallback order)
- * 3) the translation key
+ *
+ * 1. The translations instance (WeakMap key)
+ * 2. The current language and optional region (first entry in the fallback order)
+ * 3. The translation key
  */
 const caches = new WeakMap<InternalTranslations, Map<string, Map<string, TranslationTemplate>>>()
 
 /** Get the `TranslationTemplate` for the translation or translation key. */
 function getTemplate(
-    translations: InternalTranslations,
-    translation: TranslationKey | Translation,
-    languages: LanguageKeys,
+  translations: InternalTranslations,
+  translation: TranslationKey | Translation,
+  languages: LanguageKeys,
 ): TranslationTemplate {
-  if (! translation) throw new Error('No translation key specified')
+  if (!translation) throw new Error('No translation key specified')
 
   if (typeof translation === 'string') {
     // Get the cache for the messages instance
     let cache = caches.get(translations)
-    if (! cache) caches.set(translations, cache = new Map())
+    if (!cache) caches.set(translations, (cache = new Map()))
 
     // Get the cache for the current language and optional region.
     let languageCache = cache.get(languages[0])
-    if (! languageCache) cache.set(languages[0], languageCache = new Map())
+    if (!languageCache) cache.set(languages[0], (languageCache = new Map()))
 
     // Get the translation from the cache or parse it
     let template = languageCache.get(translation)
-    if (! template) {
+    if (!template) {
       let object = translations.get(translation)
-      if (! object) {
+      if (!object) {
         warn(`Translation key "${translation}" not found`)
         object = new Map()
         object.set(languages[languages.length - 1]!, translation)
@@ -421,10 +431,7 @@ function getTemplate(
  * Select a message in fallback order and parse its zero, singular, and
  * plural variants into literal strings and parameter tokens.
  */
-function extractTemplate(
-    translation: InternalTranslation,
-    languages: LanguageKeys,
-): TranslationTemplate {
+function extractTemplate(translation: InternalTranslation, languages: LanguageKeys): TranslationTemplate {
   let message: InternalMessage | undefined = undefined
 
   for (const language of languages) {
@@ -432,7 +439,7 @@ function extractTemplate(
     if (message) break
   }
 
-  if (! message) {
+  if (!message) {
     const language = languages[languages.length - 1]
     const entries = Object.fromEntries(translation.entries())
     warn(`Translation missing default language "${language}" in`, entries)
@@ -441,7 +448,7 @@ function extractTemplate(
 
   // Tuple elements are already separated; their pipes remain literal.
   const translations = typeof message === 'string' ? splitVariants(message) : message
-  const [ first, second, third ] = translations.map(parseTemplate)
+  const [first, second, third] = translations.map(parseTemplate)
   if (translations.length === 1) {
     return { zero: first!, singular: first!, plural: first! }
   } else if (translations.length === 2) {
@@ -516,24 +523,25 @@ function parseTemplate(template: string): TemplatePart[] {
 }
 
 /** Select a plural variant, substitute parameters once, and trim the result. */
-function replaceParams(
-    template: TranslationTemplate,
-    params: TranslationParams,
-    format: Intl.NumberFormat,
-): string {
+function replaceParams(template: TranslationTemplate, params: TranslationParams, format: Intl.NumberFormat): string {
   // Select the template to use based on the "n" (number) parameter
   const n = typeof params['n'] === 'string' ? Number(params['n']) : params['n']
-  const formatted = n === 0 ? template.zero :
-    n === 1 ? template.singular :
-    template.plural
+  const formatted = n === 0 ? template.zero : n === 1 ? template.singular : template.plural
 
-  return formatted.map((part) => {
-    if (typeof part === 'string') return part
-    if (! Object.hasOwn(params, part.param)) return `{${part.param}}`
+  return formatted
+    .map((part) => {
+      if (typeof part === 'string') return part
+      if (!Object.hasOwn(params, part.param)) return `{${part.param}}`
 
-    const value = params[part.param]
-    return typeof value === 'number' ? format.format(value) :
-      typeof value === 'string' ? value :
-      value ? String(value) : ''
-  }).join('').trim()
+      const value = params[part.param]
+      return typeof value === 'number'
+        ? format.format(value)
+        : typeof value === 'string'
+          ? value
+          : value
+            ? String(value)
+            : ''
+    })
+    .join('')
+    .trim()
 }

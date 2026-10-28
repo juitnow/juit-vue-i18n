@@ -3,7 +3,7 @@
     "module": "esnext",
     "target": "esnext",
     "moduleResolution": "bundler",
-    "lib": [ "es2022", "dom", "dom.iterable" ],
+    "lib": ["es2022", "dom", "dom.iterable"],
     "types": [],
 
     "strict": true,
@@ -22,14 +22,8 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
 
     "paths": {
-      "@/*": ["./src/*"],
-    },
+      "@/*": ["./src/*"]
+    }
   },
-  "include": [
-    "env.d.ts",
-    "lib/**/*",
-    "lib/**/*.vue",
-    "src/**/*",
-    "src/**/*.vue",
-  ],
+  "include": ["env.d.ts", "lib/**/*", "lib/**/*.vue", "src/**/*", "src/**/*.vue"]
 }
