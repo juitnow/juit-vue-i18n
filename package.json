@@ -34,7 +34,7 @@
   },
   "scripts": {
     "build": "plug",
-    "dev": "plug -w lib -w test"
+    "dev": "plug -w lib -w test coverage"
   },
   "devDependencies": {
     "@plugjs/cov8": "^0.7.14",
