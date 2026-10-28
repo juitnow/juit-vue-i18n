@@ -1,20 +1,22 @@
-import { describe, expect, expectTypeOf, it } from 'vitest'
+import {
+  i18n,
+  isISOCountry,
+  isISOCurrency,
+  isISOLanguage,
+  ISO_COUNTRIES,
+  ISO_LANGUAGES,
+  useTranslator,
+} from '@juit/vue-i18n'
+import { JSDOM } from 'jsdom'
+import { defineComponent } from 'vue'
 
-import { isISOCountry, isISOCurrency, isISOLanguage, ISO_COUNTRIES, ISO_LANGUAGES } from '../lib/index.ts'
-import { makeTranslator } from '../lib/translator.ts'
 import languages from './data/iso_639-1.json' with { type: 'json' }
 import countries from './data/iso_3166-1.json' with { type: 'json' }
+import { createJSDomApp } from './jsdom-vue.ts'
 
-import type {
-  DateTimeFormatAlias,
-  Language,
-  NumberFormatAlias,
-  TranslationKey,
-  TranslationMessage,
-} from '../lib/index.ts'
-import type { Translator } from '../lib/translator.ts'
+import type { I18nOptions, TranslationMessage, Translator } from '@juit/vue-i18n'
 
-declare module '../lib/index' {
+declare module '@juit/vue-i18n' {
   export interface I18nConfiguration {
     languages: 'de' | 'en'
     translationKeys: 'hello' | 'cats'
@@ -26,13 +28,21 @@ declare module '../lib/index' {
 describe('I18N Plugin', () => {
   let translator: Translator
 
-  it('should narrow configured types and retain defaults for omitted configuration', () => {
-    expectTypeOf<Language>().toEqualTypeOf<'de' | 'en'>()
-    expectTypeOf<TranslationKey>().toEqualTypeOf<'hello' | 'cats'>()
-    expectTypeOf<DateTimeFormatAlias>().toEqualTypeOf<string>()
-    expectTypeOf<NumberFormatAlias>().toEqualTypeOf<string>()
-    expectTypeOf<ReturnType<typeof makeTranslator>>().toEqualTypeOf<Translator>()
-  })
+  function makeTranslator(options: I18nOptions): Translator {
+    let translator: Translator | undefined
+    const dom = new JSDOM('<!doctype html><html><body><div id="app"/></body></html>')
+
+    const component = defineComponent({
+      setup() {
+        translator = useTranslator()
+        return () => null
+      },
+    })
+
+    createJSDomApp(dom, component).use(i18n, options).mount('#app')
+    expect(translator).toBeDefined()
+    return translator!
+  }
 
   it('should create a translator', () => {
     translator = makeTranslator({
@@ -50,64 +60,64 @@ describe('I18N Plugin', () => {
 
     expect(translator).toBeDefined()
 
-    expect(translator.language).toBe('en')
+    expect(translator.language).toEqual('en')
     expect(translator.region).toBeUndefined()
-    expect(translator.locale.toString()).toBe('en')
+    expect(translator.locale.toString()).toEqual('en')
   })
 
-  it('should translate a string in various languages', (context) => {
-    if (!translator) return context.skip()
+  it('should translate a string in various languages', () => {
+    if (!translator) return skip()
 
-    expect(translator.t('hello')).toBe('Hello, World!')
+    expect(translator.t('hello')).toEqual('Hello, World!')
 
     translator.language = 'de'
-    expect(translator.t('hello')).toBe('Hallo, Welt!')
-    expect(translator.language).toBe('de')
+    expect(translator.t('hello')).toEqual('Hallo, Welt!')
+    expect(translator.language).toEqual('de')
     expect(translator.region).toBeUndefined()
-    expect(translator.locale.toString()).toBe('de')
+    expect(translator.locale.toString()).toEqual('de')
 
     translator.region = 'DE'
-    expect(translator.t('hello')).toBe('Hallo, Deutschland!')
-    expect(translator.language).toBe('de')
-    expect(translator.region).toBe('DE')
-    expect(translator.locale.toString()).toBe('de-DE')
+    expect(translator.t('hello')).toEqual('Hallo, Deutschland!')
+    expect(translator.language).toEqual('de')
+    expect(translator.region).toEqual('DE')
+    expect(translator.locale.toString()).toEqual('de-DE')
 
     translator.region = 'AT'
-    expect(translator.t('hello')).toBe('Hallo, Österreich!')
-    expect(translator.language).toBe('de')
-    expect(translator.region).toBe('AT')
-    expect(translator.locale.toString()).toBe('de-AT')
+    expect(translator.t('hello')).toEqual('Hallo, Österreich!')
+    expect(translator.language).toEqual('de')
+    expect(translator.region).toEqual('AT')
+    expect(translator.locale.toString()).toEqual('de-AT')
   })
 
   it('should preserve the region when changing language', () => {
     const translator = makeTranslator({ defaultLanguage: 'en-CA' })
 
     translator.language = 'fr'
-    expect(translator.locale.toString()).toBe('fr-CA')
+    expect(translator.locale.toString()).toEqual('fr-CA')
 
     translator.region = undefined
-    expect(translator.locale.toString()).toBe('fr')
+    expect(translator.locale.toString()).toEqual('fr')
 
     translator.language = 'en'
-    expect(translator.locale.toString()).toBe('en')
+    expect(translator.locale.toString()).toEqual('en')
   })
 
   it('should keep only language and region from locales', () => {
     const translator = makeTranslator({ defaultLanguage: 'zh-Hant-TW-u-nu-hanidec' })
-    expect(translator.locale.toString()).toBe('zh-TW')
+    expect(translator.locale.toString()).toEqual('zh-TW')
 
     translator.locale = new Intl.Locale('sr-Latn-RS-u-nu-latn')
-    expect(translator.locale.toString()).toBe('sr-RS')
+    expect(translator.locale.toString()).toEqual('sr-RS')
   })
 
-  it('should find the best match for missing languages', (context) => {
-    if (!translator) return context.skip()
+  it('should find the best match for missing languages', () => {
+    if (!translator) return skip()
 
     translator.locale = new Intl.Locale('de-CH')
-    expect(translator.t('hello')).toBe('Hallo, Welt!')
+    expect(translator.t('hello')).toEqual('Hallo, Welt!')
 
     translator.locale = new Intl.Locale('ja-JP')
-    expect(translator.t('hello')).toBe('Hello, World!')
+    expect(translator.t('hello')).toEqual('Hello, World!')
   })
 
   it('should fall back from the default region to its base language', () => {
@@ -119,50 +129,50 @@ describe('I18N Plugin', () => {
     })
 
     translator.locale = new Intl.Locale('de-DE')
-    expect(translator.t('hello')).toBe('Hello!')
+    expect(translator.t('hello')).toEqual('Hello!')
 
     translator.utils.updateTranslations({ hello: { 'en-US': 'Howdy!' } })
-    expect(translator.t('hello')).toBe('Howdy!')
+    expect(translator.t('hello')).toEqual('Howdy!')
 
     translator.utils.updateTranslations({ hello: { de: 'Hallo!' } })
-    expect(translator.t('hello')).toBe('Hallo!')
+    expect(translator.t('hello')).toEqual('Hallo!')
 
     translator.utils.updateTranslations({ hello: { 'de-DE': 'Guten Tag!' } })
-    expect(translator.t('hello')).toBe('Guten Tag!')
+    expect(translator.t('hello')).toEqual('Guten Tag!')
   })
 
-  it('should format a number in various languages', (context) => {
-    if (!translator) return context.skip()
+  it('should format a number in various languages', () => {
+    if (!translator) return skip()
 
     translator.locale = new Intl.Locale('en-US')
-    expect(translator.n(1234.56)).toBe('1,234.56')
-    expect(translator.n(null)).toBe('')
-    expect(translator.n()).toBe('')
+    expect(translator.n(1234.56)).toEqual('1,234.56')
+    expect(translator.n(null)).toEqual('')
+    expect(translator.n()).toEqual('')
 
     translator.locale = new Intl.Locale('de-DE')
-    expect(translator.n(1234.56)).toBe('1.234,56')
-    expect(translator.n(null)).toBe('')
-    expect(translator.n()).toBe('')
+    expect(translator.n(1234.56)).toEqual('1.234,56')
+    expect(translator.n(null)).toEqual('')
+    expect(translator.n()).toEqual('')
   })
 
-  it('should format a number (as a currency) in various languages', (context) => {
-    if (!translator) return context.skip()
+  it('should format a number (as a currency) in various languages', () => {
+    if (!translator) return skip()
 
     translator.locale = new Intl.Locale('en-US')
-    expect(translator.n(1234.56, 'EUR')).toBe('€1,234.56')
-    expect(translator.n(1234.56, 'USD')).toBe('$1,234.56')
-    expect(translator.n(null, 'EUR')).toBe('')
-    expect(translator.n(null, 'USD')).toBe('')
+    expect(translator.n(1234.56, 'EUR')).toEqual('€1,234.56')
+    expect(translator.n(1234.56, 'USD')).toEqual('$1,234.56')
+    expect(translator.n(null, 'EUR')).toEqual('')
+    expect(translator.n(null, 'USD')).toEqual('')
 
     translator.locale = new Intl.Locale('de-DE')
-    expect(translator.n(1234.56, 'EUR')).toBe('1.234,56\xA0€')
-    expect(translator.n(1234.56, 'USD')).toBe('1.234,56\xA0$')
-    expect(translator.n(null, 'EUR')).toBe('')
-    expect(translator.n(null, 'USD')).toBe('')
+    expect(translator.n(1234.56, 'EUR')).toEqual('1.234,56\xA0€')
+    expect(translator.n(1234.56, 'USD')).toEqual('1.234,56\xA0$')
+    expect(translator.n(null, 'EUR')).toEqual('')
+    expect(translator.n(null, 'USD')).toEqual('')
   })
 
-  it('should format a date and time in various languages', (context) => {
-    if (!translator) return context.skip()
+  it('should format a date and time in various languages', () => {
+    if (!translator) return skip()
 
     const date = new Date(1234567890123) // remember, by default the timezone is local, sooooo...
 
@@ -176,113 +186,121 @@ describe('I18N Plugin', () => {
 
     translator.locale = new Intl.Locale('en-US')
 
-    expect(translator.d(date)).toBe(dateTimeEN)
-    expect(translator.d(date.getTime())).toBe(dateTimeEN)
-    expect(translator.d(date.toISOString())).toBe(dateTimeEN)
-    expect(translator.d(null)).toBe('')
-    expect(translator.d('')).toBe('')
-    expect(translator.d()).toBe('')
+    expect(translator.d(date)).toEqual(dateTimeEN)
+    expect(translator.d(date.getTime())).toEqual(dateTimeEN)
+    expect(translator.d(date.toISOString())).toEqual(dateTimeEN)
+    expect(translator.d(null)).toEqual('')
+    expect(translator.d('')).toEqual('')
+    expect(translator.d()).toEqual('')
 
-    expect(translator.d(date, 'date')).toBe(dateOnlyEN)
-    expect(translator.d(date.getTime(), 'date')).toBe(dateOnlyEN)
-    expect(translator.d(date.toISOString(), 'date')).toBe(dateOnlyEN)
-    expect(translator.d(null, 'date')).toBe('')
-    expect(translator.d('', 'date')).toBe('')
+    expect(translator.d(date, 'date')).toEqual(dateOnlyEN)
+    expect(translator.d(date.getTime(), 'date')).toEqual(dateOnlyEN)
+    expect(translator.d(date.toISOString(), 'date')).toEqual(dateOnlyEN)
+    expect(translator.d(null, 'date')).toEqual('')
+    expect(translator.d('', 'date')).toEqual('')
 
-    expect(translator.d(date, 'time')).toBe(timeOnlyEN)
-    expect(translator.d(date.getTime(), 'time')).toBe(timeOnlyEN)
-    expect(translator.d(date.toISOString(), 'time')).toBe(timeOnlyEN)
-    expect(translator.d(null, 'time')).toBe('')
-    expect(translator.d('', 'time')).toBe('')
+    expect(translator.d(date, 'time')).toEqual(timeOnlyEN)
+    expect(translator.d(date.getTime(), 'time')).toEqual(timeOnlyEN)
+    expect(translator.d(date.toISOString(), 'time')).toEqual(timeOnlyEN)
+    expect(translator.d(null, 'time')).toEqual('')
+    expect(translator.d('', 'time')).toEqual('')
 
     translator.locale = new Intl.Locale('de-DE')
 
-    expect(translator.d(date)).toBe(dateTimeDE)
-    expect(translator.d(date.getTime())).toBe(dateTimeDE)
-    expect(translator.d(date.toISOString())).toBe(dateTimeDE)
-    expect(translator.d(null)).toBe('')
-    expect(translator.d('')).toBe('')
-    expect(translator.d()).toBe('')
+    expect(translator.d(date)).toEqual(dateTimeDE)
+    expect(translator.d(date.getTime())).toEqual(dateTimeDE)
+    expect(translator.d(date.toISOString())).toEqual(dateTimeDE)
+    expect(translator.d(null)).toEqual('')
+    expect(translator.d('')).toEqual('')
+    expect(translator.d()).toEqual('')
 
-    expect(translator.d(date, 'date')).toBe(dateOnlyDE)
-    expect(translator.d(date.getTime(), 'date')).toBe(dateOnlyDE)
-    expect(translator.d(date.toISOString(), 'date')).toBe(dateOnlyDE)
-    expect(translator.d(null, 'date')).toBe('')
-    expect(translator.d('', 'date')).toBe('')
+    expect(translator.d(date, 'date')).toEqual(dateOnlyDE)
+    expect(translator.d(date.getTime(), 'date')).toEqual(dateOnlyDE)
+    expect(translator.d(date.toISOString(), 'date')).toEqual(dateOnlyDE)
+    expect(translator.d(null, 'date')).toEqual('')
+    expect(translator.d('', 'date')).toEqual('')
 
-    expect(translator.d(date, 'time')).toBe(timeOnlyDE)
-    expect(translator.d(date.getTime(), 'time')).toBe(timeOnlyDE)
-    expect(translator.d(date.toISOString(), 'time')).toBe(timeOnlyDE)
-    expect(translator.d(null, 'time')).toBe('')
-    expect(translator.d('', 'time')).toBe('')
+    expect(translator.d(date, 'time')).toEqual(timeOnlyDE)
+    expect(translator.d(date.getTime(), 'time')).toEqual(timeOnlyDE)
+    expect(translator.d(date.toISOString(), 'time')).toEqual(timeOnlyDE)
+    expect(translator.d(null, 'time')).toEqual('')
+    expect(translator.d('', 'time')).toEqual('')
   })
 
-  it('should format a date and time in various languages with string styles', (context) => {
-    if (!translator) return context.skip()
+  it('should format a date and time in various languages with string styles', () => {
+    if (!translator) return skip()
 
     const date = new Date(1234567890123) // remember, by default the timezone is local, sooooo...
 
     translator.locale = new Intl.Locale('en-US')
 
-    expect(translator.d(date, 'short')).toBe(
+    expect(translator.d(date, 'short')).toEqual(
       new Intl.DateTimeFormat('en-US', { dateStyle: 'short', timeStyle: 'short' }).format(date),
     )
-    expect(translator.d(date, 'medium')).toBe(
+    expect(translator.d(date, 'medium')).toEqual(
       new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'medium' }).format(date),
     )
-    expect(translator.d(date, 'long')).toBe(
+    expect(translator.d(date, 'long')).toEqual(
       new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeStyle: 'long' }).format(date),
     )
-    expect(translator.d(date, 'full')).toBe(
+    expect(translator.d(date, 'full')).toEqual(
       new Intl.DateTimeFormat('en-US', { dateStyle: 'full', timeStyle: 'full' }).format(date),
     )
 
-    expect(translator.d(date, 'shortDate')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(date))
-    expect(translator.d(date, 'mediumDate')).toBe(
+    expect(translator.d(date, 'shortDate')).toEqual(
+      new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(date),
+    )
+    expect(translator.d(date, 'mediumDate')).toEqual(
       new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(date),
     )
-    expect(translator.d(date, 'longDate')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'long' }).format(date))
-    expect(translator.d(date, 'fullDate')).toBe(new Intl.DateTimeFormat('en-US', { dateStyle: 'full' }).format(date))
+    expect(translator.d(date, 'longDate')).toEqual(new Intl.DateTimeFormat('en-US', { dateStyle: 'long' }).format(date))
+    expect(translator.d(date, 'fullDate')).toEqual(new Intl.DateTimeFormat('en-US', { dateStyle: 'full' }).format(date))
 
-    expect(translator.d(date, 'shortTime')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'short' }).format(date))
-    expect(translator.d(date, 'mediumTime')).toBe(
+    expect(translator.d(date, 'shortTime')).toEqual(
+      new Intl.DateTimeFormat('en-US', { timeStyle: 'short' }).format(date),
+    )
+    expect(translator.d(date, 'mediumTime')).toEqual(
       new Intl.DateTimeFormat('en-US', { timeStyle: 'medium' }).format(date),
     )
-    expect(translator.d(date, 'longTime')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'long' }).format(date))
-    expect(translator.d(date, 'fullTime')).toBe(new Intl.DateTimeFormat('en-US', { timeStyle: 'full' }).format(date))
+    expect(translator.d(date, 'longTime')).toEqual(new Intl.DateTimeFormat('en-US', { timeStyle: 'long' }).format(date))
+    expect(translator.d(date, 'fullTime')).toEqual(new Intl.DateTimeFormat('en-US', { timeStyle: 'full' }).format(date))
 
     translator.locale = new Intl.Locale('de-DE')
 
-    expect(translator.d(date, 'short')).toBe(
+    expect(translator.d(date, 'short')).toEqual(
       new Intl.DateTimeFormat('de-DE', { dateStyle: 'short', timeStyle: 'short' }).format(date),
     )
-    expect(translator.d(date, 'medium')).toBe(
+    expect(translator.d(date, 'medium')).toEqual(
       new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'medium' }).format(date),
     )
-    expect(translator.d(date, 'long')).toBe(
+    expect(translator.d(date, 'long')).toEqual(
       new Intl.DateTimeFormat('de-DE', { dateStyle: 'long', timeStyle: 'long' }).format(date),
     )
-    expect(translator.d(date, 'full')).toBe(
+    expect(translator.d(date, 'full')).toEqual(
       new Intl.DateTimeFormat('de-DE', { dateStyle: 'full', timeStyle: 'full' }).format(date),
     )
 
-    expect(translator.d(date, 'shortDate')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'short' }).format(date))
-    expect(translator.d(date, 'mediumDate')).toBe(
+    expect(translator.d(date, 'shortDate')).toEqual(
+      new Intl.DateTimeFormat('de-DE', { dateStyle: 'short' }).format(date),
+    )
+    expect(translator.d(date, 'mediumDate')).toEqual(
       new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(date),
     )
-    expect(translator.d(date, 'longDate')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'long' }).format(date))
-    expect(translator.d(date, 'fullDate')).toBe(new Intl.DateTimeFormat('de-DE', { dateStyle: 'full' }).format(date))
+    expect(translator.d(date, 'longDate')).toEqual(new Intl.DateTimeFormat('de-DE', { dateStyle: 'long' }).format(date))
+    expect(translator.d(date, 'fullDate')).toEqual(new Intl.DateTimeFormat('de-DE', { dateStyle: 'full' }).format(date))
 
-    expect(translator.d(date, 'shortTime')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'short' }).format(date))
-    expect(translator.d(date, 'mediumTime')).toBe(
+    expect(translator.d(date, 'shortTime')).toEqual(
+      new Intl.DateTimeFormat('de-DE', { timeStyle: 'short' }).format(date),
+    )
+    expect(translator.d(date, 'mediumTime')).toEqual(
       new Intl.DateTimeFormat('de-DE', { timeStyle: 'medium' }).format(date),
     )
-    expect(translator.d(date, 'longTime')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'long' }).format(date))
-    expect(translator.d(date, 'fullTime')).toBe(new Intl.DateTimeFormat('de-DE', { timeStyle: 'full' }).format(date))
+    expect(translator.d(date, 'longTime')).toEqual(new Intl.DateTimeFormat('de-DE', { timeStyle: 'long' }).format(date))
+    expect(translator.d(date, 'fullTime')).toEqual(new Intl.DateTimeFormat('de-DE', { timeStyle: 'full' }).format(date))
   })
 
-  it('should format a date and time in various languages with object formats', (context) => {
-    if (!translator) return context.skip()
+  it('should format a date and time in various languages with object formats', () => {
+    if (!translator) return skip()
 
     const date = new Date(1234567890123) // remember, by default the timezone is local, sooooo...
 
@@ -301,7 +319,7 @@ describe('I18N Plugin', () => {
         timeZone: 'America/New_York',
         timeZoneName: 'long',
       }),
-    ).toBe('Friday, 02/13/2009, 18:31:30 Eastern Standard Time')
+    ).toEqual('Friday, 02/13/2009, 18:31:30 Eastern Standard Time')
 
     translator.locale = new Intl.Locale('de-DE')
 
@@ -318,7 +336,7 @@ describe('I18N Plugin', () => {
         timeZone: 'Europe/Berlin',
         timeZoneName: 'long',
       }),
-    ).toBe('Samstag, 14.02.2009, 00:31:30 Mitteleuropäische Normalzeit')
+    ).toEqual('Samstag, 14.02.2009, 00:31:30 Mitteleuropäische Normalzeit')
   })
 
   it('should format ad date honoring the default time zone', () => {
@@ -392,8 +410,8 @@ describe('I18N Plugin', () => {
       })
       const expected = new Intl.DateTimeFormat('en-GB', { ...format, timeZone: defaultTimeZone }).format(date)
 
-      expect(translator.d(date, format)).toBe(expected)
-      expect(translator.d(date, 'custom')).toBe(expected)
+      expect(translator.d(date, format)).toEqual(expected)
+      expect(translator.d(date, 'custom')).toEqual(expected)
     }
   })
 
@@ -418,15 +436,15 @@ describe('I18N Plugin', () => {
     ]
 
     for (const format of formats) {
-      expect(translator.d(date, format)).toBe('23:31')
-      expect(translator.d(date, format, 'Asia/Tokyo')).toBe('08:31')
-      expect(format.timeZone).toBe('UTC')
-      expect(translator.d(date, format)).toBe('23:31')
+      expect(translator.d(date, format)).toEqual('23:31')
+      expect(translator.d(date, format, 'Asia/Tokyo')).toEqual('08:31')
+      expect(format.timeZone).toEqual('UTC')
+      expect(translator.d(date, format)).toEqual('23:31')
     }
   })
 
-  it('should format a number in various languages with object formats', (context) => {
-    if (!translator) return context.skip()
+  it('should format a number in various languages with object formats', () => {
+    if (!translator) return skip()
 
     translator.locale = new Intl.Locale('en-US')
 
@@ -435,7 +453,7 @@ describe('I18N Plugin', () => {
         style: 'unit',
         unit: 'meter-per-second',
       }),
-    ).toBe('1,234.56 m/s')
+    ).toEqual('1,234.56 m/s')
 
     translator.locale = new Intl.Locale('de-DE')
 
@@ -444,11 +462,11 @@ describe('I18N Plugin', () => {
         style: 'unit',
         unit: 'meter-per-second',
       }),
-    ).toBe('1.234,56 m/s')
+    ).toEqual('1.234,56 m/s')
   })
 
-  it('should parameterize translations', (context) => {
-    if (!translator) return context.skip()
+  it('should parameterize translations', () => {
+    if (!translator) return skip()
 
     translator.locale = new Intl.Locale('en-US')
 
@@ -460,7 +478,7 @@ describe('I18N Plugin', () => {
         },
         { n: '0', foo: 'Bar' },
       ),
-    ).toBe('0 items Bar')
+    ).toEqual('0 items Bar')
 
     expect(
       translator.tc(
@@ -470,7 +488,7 @@ describe('I18N Plugin', () => {
         },
         1,
       ),
-    ).toBe('1 items {foo}')
+    ).toEqual('1 items {foo}')
 
     expect(
       translator.t(
@@ -480,7 +498,7 @@ describe('I18N Plugin', () => {
         },
         { n: null, foo: {} } as any,
       ),
-    ).toBe('items [object Object]') // edge case
+    ).toEqual('items [object Object]') // edge case
 
     translator.locale = new Intl.Locale('de-DE')
 
@@ -492,7 +510,7 @@ describe('I18N Plugin', () => {
         },
         { n: '0', foo: 'Bar' },
       ),
-    ).toBe('0 Artikel Bar')
+    ).toEqual('0 Artikel Bar')
 
     expect(
       translator.tc(
@@ -502,7 +520,7 @@ describe('I18N Plugin', () => {
         },
         1,
       ),
-    ).toBe('1 Artikel {foo}')
+    ).toEqual('1 Artikel {foo}')
 
     expect(
       translator.t(
@@ -512,14 +530,14 @@ describe('I18N Plugin', () => {
         },
         { n: null, foo: {} } as any,
       ),
-    ).toBe('Artikel [object Object]') // edge case
+    ).toEqual('Artikel [object Object]') // edge case
   })
 
   it('should replace adjacent parameters and parameters after newlines', () => {
     const translator = makeTranslator({ defaultLanguage: 'en' })
     const message = '{x}{x}{x}\n{x}\r\n{ x }'
 
-    expect(translator.t({ en: message, de: message }, { x: 'A' })).toBe('AAA\nA\r\nA')
+    expect(translator.t({ en: message, de: message }, { x: 'A' })).toEqual('AAA\nA\r\nA')
   })
 
   it('should keep inserted parameter values literal regardless of parameter order', () => {
@@ -530,7 +548,7 @@ describe('I18N Plugin', () => {
       { x: '{y}', y: 'Alice' },
       { y: 'Alice', x: '{y}' },
     ]) {
-      expect(translator.t({ en: message, de: message }, params)).toBe('{y} Alice')
+      expect(translator.t({ en: message, de: message }, params)).toEqual('{y} Alice')
     }
   })
 
@@ -542,8 +560,8 @@ describe('I18N Plugin', () => {
       { name: 'lower', NAME: 'upper', N: 'Alice' },
       { N: 'Alice', NAME: 'upper', name: 'lower' },
     ]) {
-      expect(translator.t({ en: message, de: message }, params)).toBe('lower upper {Name} 1 Alice')
-      expect(translator.tc({ en: message, de: message }, 2, params)).toBe('lower upper {Name} 2 Alice')
+      expect(translator.t({ en: message, de: message }, params)).toEqual('lower upper {Name} 1 Alice')
+      expect(translator.tc({ en: message, de: message }, 2, params)).toEqual('lower upper {Name} 2 Alice')
     }
   })
 
@@ -552,18 +570,18 @@ describe('I18N Plugin', () => {
 
     for (const name of ['a.b', '[', 'a+b', '(x)', 'a$', 'x\\y', 'x{y}']) {
       const message = `{${name}}{${name}}`
-      expect(translator.t({ en: message, de: message }, { [name]: 'A' })).toBe('AA')
+      expect(translator.t({ en: message, de: message }, { [name]: 'A' })).toEqual('AA')
     }
 
     const message = '{a.b} {axb}'
-    expect(translator.t({ en: message, de: message }, { 'a.b': 'A' })).toBe('A {axb}')
+    expect(translator.t({ en: message, de: message }, { 'a.b': 'A' })).toEqual('A {axb}')
   })
 
   it('should preserve escaped parameters alongside adjacent replacements', () => {
     const translator = makeTranslator({ defaultLanguage: 'en' })
     const message = '\\{x}{x}\\{ X }{ X }\n\\{x}{missing}'
 
-    expect(translator.t({ en: message, de: message }, { x: 'A', X: 'B' })).toBe('{x}A{ X }B\n{x}{missing}')
+    expect(translator.t({ en: message, de: message }, { x: 'A', X: 'B' })).toEqual('{x}A{ X }B\n{x}{missing}')
   })
 
   it('should handle backslashes before placeholders like backslashes before pipes', () => {
@@ -575,8 +593,10 @@ describe('I18N Plugin', () => {
       const translation = { en: message, de: message }
       const prefix = `prefix ${slash.repeat(Math.floor(count / 2))}`
 
-      expect(translator.t(translation, { name: 'Alice' })).toBe(prefix + (count % 2 ? '{ name }' : 'Alice') + 'Alice')
-      expect(translator.t(translation)).toBe(prefix + (count % 2 ? '{ name }' : '{name}') + '{name}')
+      expect(translator.t(translation, { name: 'Alice' })).toEqual(
+        prefix + (count % 2 ? '{ name }' : 'Alice') + 'Alice',
+      )
+      expect(translator.t(translation)).toEqual(prefix + (count % 2 ? '{ name }' : '{name}') + '{name}')
     }
   })
 
@@ -587,13 +607,15 @@ describe('I18N Plugin', () => {
       translations: { hello: { en: message, de: message } },
     })
 
-    expect(translator.t('hello')).toBe('Hello {name}, write { example }')
-    expect(translator.t('hello', { name: 'Alice', example: 'ignored' })).toBe('Hello Alice, write { example }')
-    expect(translator.t('hello', { name: '{example}', example: 'ignored' })).toBe('Hello {example}, write { example }')
-    expect(translator.t('hello')).toBe('Hello {name}, write { example }')
+    expect(translator.t('hello')).toEqual('Hello {name}, write { example }')
+    expect(translator.t('hello', { name: 'Alice', example: 'ignored' })).toEqual('Hello Alice, write { example }')
+    expect(translator.t('hello', { name: '{example}', example: 'ignored' })).toEqual(
+      'Hello {example}, write { example }',
+    )
+    expect(translator.t('hello')).toEqual('Hello {name}, write { example }')
 
     translator.utils.updateTranslations({ hello: { en: 'Bye { name }' } })
-    expect(translator.t('hello', { name: 'Alice' })).toBe('Bye Alice')
+    expect(translator.t('hello', { name: 'Alice' })).toEqual('Bye Alice')
   })
 
   it('should only replace placeholders with own parameter values', () => {
@@ -601,25 +623,25 @@ describe('I18N Plugin', () => {
     const message = '{ constructor } { toString } { __proto__ }'
     const translation = { en: message, de: message }
 
-    expect(translator.t(translation)).toBe('{constructor} {toString} {__proto__}')
+    expect(translator.t(translation)).toEqual('{constructor} {toString} {__proto__}')
     expect(
       translator.t(translation, {
         ['constructor']: 'C',
         ['toString']: 'T',
         ['__proto__']: 'P',
       }),
-    ).toBe('C T P')
+    ).toEqual('C T P')
   })
 
   it('should preserve malformed placeholders and normalize missing balanced placeholders', () => {
     const translator = makeTranslator({ defaultLanguage: 'en' })
     for (const message of ['before {name', 'after name}', 'before {x{y}']) {
-      expect(translator.t({ en: message, de: message }, { name: 'Alice', y: 'Y' })).toBe(message)
+      expect(translator.t({ en: message, de: message }, { name: 'Alice', y: 'Y' })).toEqual(message)
     }
 
     const message = 'before { x{y} } after'
-    expect(translator.t({ en: message, de: message })).toBe('before {x{y}} after')
-    expect(translator.t({ en: message, de: message }, { 'x{y}': 'value' })).toBe('before value after')
+    expect(translator.t({ en: message, de: message })).toEqual('before {x{y}} after')
+    expect(translator.t({ en: message, de: message }, { 'x{y}': 'value' })).toEqual('before value after')
   })
 
   it('should parse placeholders and escapes in every plural variant', () => {
@@ -627,13 +649,13 @@ describe('I18N Plugin', () => {
     const message = String.raw`\{ absent } | { name } \| one | {n} { name }`
     const translation = { en: message, de: message }
 
-    expect(translator.tc(translation, 0)).toBe('{ absent }')
-    expect(translator.tc(translation, 1)).toBe('{name} | one')
-    expect(translator.tc(translation, 2, { name: 'items' })).toBe('2 items')
+    expect(translator.tc(translation, 0)).toEqual('{ absent }')
+    expect(translator.tc(translation, 1)).toEqual('{name} | one')
+    expect(translator.tc(translation, 2, { name: 'items' })).toEqual('2 items')
   })
 
-  it('should pluralize translations', (context) => {
-    if (!translator) return context.skip()
+  it('should pluralize translations', () => {
+    if (!translator) return skip()
 
     translator.locale = new Intl.Locale('en-US')
 
@@ -645,7 +667,7 @@ describe('I18N Plugin', () => {
         },
         { n: '-1' },
       ),
-    ).toBe('-1 cats')
+    ).toEqual('-1 cats')
 
     expect(
       translator.t(
@@ -655,7 +677,7 @@ describe('I18N Plugin', () => {
         },
         { n: '1' },
       ),
-    ).toBe('1 cat')
+    ).toEqual('1 cat')
 
     translator.locale = new Intl.Locale('de-DE')
 
@@ -667,7 +689,7 @@ describe('I18N Plugin', () => {
         },
         { n: '-1' },
       ),
-    ).toBe('-1 Katzen')
+    ).toEqual('-1 Katzen')
 
     expect(
       translator.t(
@@ -677,7 +699,7 @@ describe('I18N Plugin', () => {
         },
         { n: '1' },
       ),
-    ).toBe('1 Katze')
+    ).toEqual('1 Katze')
   })
 
   it('should unescape literal pipes in each plural variant', () => {
@@ -685,10 +707,10 @@ describe('I18N Plugin', () => {
     const message = String.raw`none \| zero | one \| single | {n} \| many`
     const translation = { en: message, de: message }
 
-    expect(translator.tc(translation, 0)).toBe('none | zero')
-    expect(translator.tc(translation, 1)).toBe('one | single')
-    expect(translator.tc(translation, 2)).toBe('2 | many')
-    expect(translator.t({ en: String.raw`A \| B`, de: '' })).toBe('A | B')
+    expect(translator.tc(translation, 0)).toEqual('none | zero')
+    expect(translator.tc(translation, 1)).toEqual('one | single')
+    expect(translator.tc(translation, 2)).toEqual('2 | many')
+    expect(translator.t({ en: String.raw`A \| B`, de: '' })).toEqual('A | B')
   })
 
   it('should preserve literal backslashes before pipes', () => {
@@ -700,8 +722,8 @@ describe('I18N Plugin', () => {
       const translation = { en: message, de: message }
       const singular = `one ${slash.repeat(Math.floor(count / 2))}`
 
-      expect(translator.tc(translation, 1)).toBe(count % 2 ? `${singular}| many` : singular)
-      expect(translator.tc(translation, 2)).toBe(count % 2 ? `${singular}| many` : 'many')
+      expect(translator.tc(translation, 1)).toEqual(count % 2 ? `${singular}| many` : singular)
+      expect(translator.tc(translation, 2)).toEqual(count % 2 ? `${singular}| many` : 'many')
     }
   })
 
@@ -715,7 +737,7 @@ describe('I18N Plugin', () => {
 
     for (const { message, expected } of cases) {
       for (const n of [0, 1, 2]) {
-        expect(translator.tc({ en: message, de: message }, n)).toBe(expected[n])
+        expect(translator.tc({ en: message, de: message }, n)).toEqual(expected[n])
       }
     }
   })
@@ -724,8 +746,8 @@ describe('I18N Plugin', () => {
     const translator = makeTranslator({ defaultLanguage: 'en' })
     const message = ['one | item', String.raw`{n} \| items \{ name }`] as const
 
-    expect(translator.tc({ en: message, de: message }, 1)).toBe('one | item')
-    expect(translator.tc({ en: message, de: message }, 2, { name: 'ignored' })).toBe(String.raw`2 \| items { name }`)
+    expect(translator.tc({ en: message, de: message }, 1)).toEqual('one | item')
+    expect(translator.tc({ en: message, de: message }, 2, { name: 'ignored' })).toEqual(String.raw`2 \| items { name }`)
   })
 
   it('should omit trailing undefined tuple slots and preserve empty variants', () => {
@@ -740,7 +762,7 @@ describe('I18N Plugin', () => {
 
     for (const { message, expected } of cases) {
       for (const n of [0, 1, 2]) {
-        expect(translator.tc({ en: message, de: 'fallback' }, n)).toBe(expected[n])
+        expect(translator.tc({ en: message, de: 'fallback' }, n)).toEqual(expected[n])
       }
     }
   })
@@ -749,17 +771,17 @@ describe('I18N Plugin', () => {
     const invalid = ['none', undefined, 'many'] as const
     const translator = makeTranslator({ defaultLanguage: 'en' })
 
-    expect(() => makeTranslator({ defaultLanguage: 'en', translations: { hello: { en: invalid, de: '' } } })).toThrow(
-      TypeError,
-    )
-    expect(() => translator.utils.updateTranslations({ hello: { en: invalid } })).toThrow(TypeError)
-    expect(() => translator.t({ en: invalid, de: '' })).toThrow(TypeError)
+    expect(() =>
+      makeTranslator({ defaultLanguage: 'en', translations: { hello: { en: invalid, de: '' } } }),
+    ).toThrowError(TypeError)
+    expect(() => translator.utils.updateTranslations({ hello: { en: invalid } })).toThrowError(TypeError)
+    expect(() => translator.t({ en: invalid, de: '' })).toThrowError(TypeError)
   })
 
   it('should reject invalid tuple lengths from untyped input', () => {
     const translator = makeTranslator({ defaultLanguage: 'en' })
     for (const message of [[], ['a', 'b', 'c', 'd']]) {
-      expect(() => translator.t({ en: message as unknown as TranslationMessage, de: '' })).toThrow(TypeError)
+      expect(() => translator.t({ en: message as unknown as TranslationMessage, de: '' })).toThrowError(TypeError)
     }
   })
 
@@ -768,17 +790,17 @@ describe('I18N Plugin', () => {
       defaultLanguage: 'en',
       translations: { hello: { en: 'original', de: '' } },
     })
-    expect(translator.t('hello')).toBe('original')
+    expect(translator.t('hello')).toEqual('original')
     expect(() =>
       translator.utils.updateTranslations({
         hello: { en: 'partial update' },
         cats: { en: ['none', undefined, 'many'] },
       }),
-    ).toThrow(TypeError)
+    ).toThrowError(TypeError)
 
     // Force the next lookup to read stored messages rather than the old cache.
     translator.utils.updateTranslations({ cats: { en: 'cats' } })
-    expect(translator.t('hello')).toBe('original')
+    expect(translator.t('hello')).toEqual('original')
   })
 
   it('should copy tuples on initialization and updates, including before cache population', () => {
@@ -789,21 +811,21 @@ describe('I18N Plugin', () => {
     })
     original[0] = 'mutated'
     original[1] = 'mutated'
-    expect(translator.tc('hello', 1)).toBe('one')
-    expect(translator.tc('hello', 2)).toBe('many')
+    expect(translator.tc('hello', 1)).toEqual('one')
+    expect(translator.tc('hello', 2)).toEqual('many')
     translator.language = 'de'
-    expect(translator.tc('hello', 1)).toBe('one')
+    expect(translator.tc('hello', 1)).toEqual('one')
 
     const update: [string, string, string] = ['zero updated', 'one updated', 'many updated']
     translator.utils.updateTranslations({ hello: { en: update } })
     update.fill('mutated')
     translator.language = 'en'
-    expect(translator.tc('hello', 0)).toBe('zero updated')
-    expect(translator.tc('hello', 1)).toBe('one updated')
-    expect(translator.tc('hello', 2)).toBe('many updated')
+    expect(translator.tc('hello', 0)).toEqual('zero updated')
+    expect(translator.tc('hello', 1)).toEqual('one updated')
+    expect(translator.tc('hello', 2)).toEqual('many updated')
 
     translator.utils.updateTranslations({ hello: { de: 'cache invalidation' } })
-    expect(translator.tc('hello', 2)).toBe('many updated')
+    expect(translator.tc('hello', 2)).toEqual('many updated')
   })
 
   it('should use tuples in regional translations and fall back to string messages', () => {
@@ -813,15 +835,15 @@ describe('I18N Plugin', () => {
     })
 
     translator.locale = new Intl.Locale('de-AT')
-    expect(translator.tc('hello', 2)).toBe('viele')
+    expect(translator.tc('hello', 2)).toEqual('viele')
     translator.region = 'DE'
-    expect(translator.tc('hello', 2)).toBe('many')
+    expect(translator.tc('hello', 2)).toEqual('many')
     translator.utils.updateTranslations({ hello: { 'de-DE': ['eines', 'mehrere'] as const } })
-    expect(translator.tc('hello', 2)).toBe('mehrere')
+    expect(translator.tc('hello', 2)).toEqual('mehrere')
   })
 
-  it('should pluralize translations with an option for zero', (context) => {
-    if (!translator) return context.skip()
+  it('should pluralize translations with an option for zero', () => {
+    if (!translator) return skip()
 
     translator.locale = new Intl.Locale('en-US')
 
@@ -833,7 +855,7 @@ describe('I18N Plugin', () => {
         },
         0,
       ),
-    ).toBe('no cats')
+    ).toEqual('no cats')
 
     expect(
       translator.tc(
@@ -843,7 +865,7 @@ describe('I18N Plugin', () => {
         },
         1,
       ),
-    ).toBe('one cat {n}')
+    ).toEqual('one cat {n}')
 
     expect(
       translator.tc(
@@ -853,7 +875,7 @@ describe('I18N Plugin', () => {
         },
         2,
       ),
-    ).toBe('2 cats')
+    ).toEqual('2 cats')
 
     expect(
       translator.tc(
@@ -863,7 +885,7 @@ describe('I18N Plugin', () => {
         },
         1234.56,
       ),
-    ).toBe('1,234.56 cats')
+    ).toEqual('1,234.56 cats')
 
     translator.locale = new Intl.Locale('de-DE')
 
@@ -875,7 +897,7 @@ describe('I18N Plugin', () => {
         },
         0,
       ),
-    ).toBe('keine Katzen')
+    ).toEqual('keine Katzen')
 
     expect(
       translator.tc(
@@ -885,7 +907,7 @@ describe('I18N Plugin', () => {
         },
         1,
       ),
-    ).toBe('eine Katze {n}')
+    ).toEqual('eine Katze {n}')
 
     expect(
       translator.tc(
@@ -895,7 +917,7 @@ describe('I18N Plugin', () => {
         },
         2,
       ),
-    ).toBe('2 Katzen')
+    ).toEqual('2 Katzen')
 
     expect(
       translator.tc(
@@ -905,7 +927,7 @@ describe('I18N Plugin', () => {
         },
         1234.56,
       ),
-    ).toBe('1.234,56 Katzen')
+    ).toEqual('1.234,56 Katzen')
   })
 
   it('should configure default formats', () => {
@@ -934,67 +956,67 @@ describe('I18N Plugin', () => {
     const date = new Date(1234567890123)
 
     translator.locale = new Intl.Locale('en-US')
-    expect(translator.d(date)).toBe('02/13/2009, 23:31:30')
-    expect(translator.d(date, 'date')).toBe('02/13/2009')
-    expect(translator.d(date, 'time')).toBe('23:31:30')
-    expect(translator.n(1234.56)).toBe('1,234.56 m/s')
-    expect(translator.n(1234.56, 'test')).toBe('¥1,235') // no decimal on JPY
-    expect(translator.n(1234.56, 'EUR')).toBe('€1,234.56')
+    expect(translator.d(date)).toEqual('02/13/2009, 23:31:30')
+    expect(translator.d(date, 'date')).toEqual('02/13/2009')
+    expect(translator.d(date, 'time')).toEqual('23:31:30')
+    expect(translator.n(1234.56)).toEqual('1,234.56 m/s')
+    expect(translator.n(1234.56, 'test')).toEqual('¥1,235') // no decimal on JPY
+    expect(translator.n(1234.56, 'EUR')).toEqual('€1,234.56')
 
     translator.locale = new Intl.Locale('de-DE')
-    expect(translator.d(date)).toBe('13.02.2009, 23:31:30')
-    expect(translator.d(date, 'date')).toBe('13.02.2009')
-    expect(translator.d(date, 'time')).toBe('23:31:30')
-    expect(translator.n(1234.56)).toBe('1.234,56 m/s')
-    expect(translator.n(1234.56, 'test')).toBe('1.235\xA0¥')
-    expect(translator.n(1234.56, 'EUR')).toBe('1.234,56\xA0€')
+    expect(translator.d(date)).toEqual('13.02.2009, 23:31:30')
+    expect(translator.d(date, 'date')).toEqual('13.02.2009')
+    expect(translator.d(date, 'time')).toEqual('23:31:30')
+    expect(translator.n(1234.56)).toEqual('1.234,56 m/s')
+    expect(translator.n(1234.56, 'test')).toEqual('1.235\xA0¥')
+    expect(translator.n(1234.56, 'EUR')).toEqual('1.234,56\xA0€')
   })
 
   describe('Edge Cases', () => {
     it('should warn with an invalid locales', () => {
       const translator = makeTranslator({ defaultLanguage: new Intl.Locale('xx-ZZ') })
 
-      expect(translator.locale.language).toBe('xx')
-      expect(translator.locale.region).toBe('ZZ')
-      expect(translator.language).toBe('xx')
-      expect(translator.region).toBe('ZZ')
+      expect(translator.locale.language).toEqual('xx')
+      expect(translator.locale.region).toEqual('ZZ')
+      expect(translator.language).toEqual('xx')
+      expect(translator.region).toEqual('ZZ')
 
       translator.language = 'zz' as any
       translator.region = 'XX' as any
-      expect(translator.language).toBe('zz')
-      expect(translator.region).toBe('XX')
-      expect(translator.locale.toString()).toBe('zz-XX')
+      expect(translator.language).toEqual('zz')
+      expect(translator.region).toEqual('XX')
+      expect(translator.locale.toString()).toEqual('zz-XX')
 
       translator.language = 'qq' as any
       translator.region = false as any
-      expect(translator.language).toBe('qq')
-      expect(translator.region).toBe(undefined)
-      expect(translator.locale.toString()).toBe('qq')
+      expect(translator.language).toEqual('qq')
+      expect(translator.region).toEqual(undefined)
+      expect(translator.locale.toString()).toEqual('qq')
     })
 
     it('should fail when translating an empty key', () => {
       const translator = makeTranslator({ defaultLanguage: 'en' })
-      expect(() => translator.t('' as any)).toThrow('No translation key specified')
+      expect(() => translator.t('' as any)).toThrowError('No translation key specified')
     })
 
     it('should warn when translating a missing translation', () => {
       const translator = makeTranslator({ defaultLanguage: 'en' })
-      expect(translator.t('flipper' as any)).toBe('flipper')
+      expect(translator.t('flipper' as any)).toEqual('flipper')
     })
 
     it('should warn when missing the default language', () => {
       const translator = makeTranslator({ defaultLanguage: 'en' })
-      expect(translator.t({ de: 'flipper' } as any)).toBe('')
+      expect(translator.t({ de: 'flipper' } as any)).toEqual('')
     })
 
     it('should warn when the date time format is invalid', () => {
       const translator = makeTranslator({ defaultLanguage: 'en' })
-      expect(translator.d(new Date(), 'bogus')).toBeTypeOf('string')
+      expect(translator.d(new Date(), 'bogus')).toBeA('string')
     })
 
     it('should warn when the number format is invalid', () => {
       const translator = makeTranslator({ defaultLanguage: 'en' })
-      expect(translator.n(1234.56, 'bogus')).toBeTypeOf('string')
+      expect(translator.n(1234.56, 'bogus')).toBeA('string')
     })
   })
 
@@ -1008,25 +1030,25 @@ describe('I18N Plugin', () => {
     })
 
     it('should validate an ISO-3166-1 country code', () => {
-      expect(isISOCountry('US')).toBe(true)
-      expect(isISOCountry('ZZ')).toBe(false)
+      expect(isISOCountry('US')).toEqual(true)
+      expect(isISOCountry('ZZ')).toEqual(false)
     })
 
     it('should validate an ISO-639-1 language code', () => {
-      expect(isISOLanguage('en')).toBe(true)
-      expect(isISOLanguage('zz')).toBe(false)
+      expect(isISOLanguage('en')).toEqual(true)
+      expect(isISOLanguage('zz')).toEqual(false)
     })
 
     it('should validate an ISO-4217 currency code', () => {
-      expect(isISOCurrency('EUR')).toBe(true)
-      expect(isISOCurrency('ZZZ')).toBe(false)
+      expect(isISOCurrency('EUR')).toEqual(true)
+      expect(isISOCurrency('ZZZ')).toEqual(false)
     })
 
     it('should return valid country names for each of our countries', () => {
       const translator = makeTranslator({ defaultLanguage: 'en' })
       for (const country of [...ISO_COUNTRIES, 'EU', 'UN'] as const) {
         const value = translator.utils.country(country)
-        expect(value).toBeTypeOf('string')
+        expect(value).toBeA('string')
         expect(value.length, `Code: ${country}`).toBeGreaterThan(2) // no codes
       }
     })
@@ -1035,7 +1057,7 @@ describe('I18N Plugin', () => {
       const translator = makeTranslator({ defaultLanguage: 'en' })
       for (const language of ISO_LANGUAGES) {
         const value = translator.utils.language(language)
-        expect(value, `Code: ${language}`).toBeTypeOf('string')
+        expect(value, `Code: ${language}`).toBeA('string')
         expect(value.length, `Code: ${language}`).toBeGreaterThan(2) // no codes
       }
     })
@@ -1044,7 +1066,7 @@ describe('I18N Plugin', () => {
       const translator = makeTranslator({ defaultLanguage: 'en' })
       for (const country of [...ISO_COUNTRIES, 'EU', 'UN'] as const) {
         const value = translator.utils.flag(country)
-        expect(value, `Code: ${country}`).toBeTypeOf('string')
+        expect(value, `Code: ${country}`).toBeA('string')
         expect(value.length, `Code: ${country}`).toEqual(4) // 2 codepoints
         expect(
           [

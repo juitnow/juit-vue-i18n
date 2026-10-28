@@ -1,6 +1,5 @@
-import { describe, expect, expectTypeOf, it } from 'vitest'
-
-import { LanguageMatcher } from '../lib/index.ts'
+import { LanguageMatcher } from '@juit/vue-i18n'
+import { expectTypeOf } from 'expect-type'
 
 describe('Language Matcher', () => {
   it('should accept readonly inputs and preserve the configured language types', () => {
@@ -8,9 +7,10 @@ describe('Language Matcher', () => {
     const matcher = new LanguageMatcher(Object.freeze(languages))
     const preferences = Object.freeze(['fr-FR', 'de-DE'])
 
-    expect(matcher.match(preferences)).toBe('de')
+    expect(matcher.match(preferences)).toEqual('de')
     expect(matcher.availableLanguages).toEqual(languages)
-    expect(matcher.availableLanguages).not.toBe(languages)
+    expect(matcher.availableLanguages).not.toStrictlyEqual(languages)
+
     expectTypeOf(matcher.availableLanguages).toEqualTypeOf<readonly ['en', 'de']>()
     expectTypeOf(matcher.defaultLanguage).toEqualTypeOf<'en'>()
     expectTypeOf(matcher.match(preferences)).toEqualTypeOf<'en' | 'de'>()
@@ -28,31 +28,30 @@ describe('Language Matcher', () => {
 
   it('should construct with a single language', () => {
     const matcher = new LanguageMatcher('en')
-    expect(matcher.defaultLanguage).toBe('en')
+    expect(matcher.defaultLanguage).toEqual('en')
     expect(matcher.availableLanguages).toEqual(['en'])
-    expect(matcher.match('en')).toBe('en')
-    expect(matcher.match('EN-US')).toBe('en') // normalization
-    expect(matcher.match('fr')).toBe('en') // fallback to default language
-    expect(matcher.match(['de', 'EN-US', 'ja-JP'])).toBe('en') // array
-    expect(matcher.match(null)).toBe('en') // default
+    expect(matcher.match('en')).toEqual('en')
+    expect(matcher.match('EN-US')).toEqual('en') // normalization
+    expect(matcher.match('fr')).toEqual('en') // fallback to default language
+    expect(matcher.match(['de', 'EN-US', 'ja-JP'])).toEqual('en') // array
+    expect(matcher.match(null)).toEqual('en') // default
   })
 
   it('should construct with an array of languages', () => {
     const matcher = new LanguageMatcher(['en', 'XX', 'JA-JP', 'de'] as any)
-    expect(matcher.defaultLanguage).toBe('en')
+    expect(matcher.defaultLanguage).toEqual('en')
     expect(matcher.availableLanguages).toEqual(['en', 'ja', 'de'])
-    expect(matcher.match('de')).toBe('de')
-    expect(matcher.match('JA-JP')).toBe('ja') // normalization
-    expect(matcher.match('fr')).toBe('en') // fallback to default language
-    expect(matcher.match([null, 'de', 'EN-US'] as any)).toBe('de') // array
-    expect(matcher.match(['-de', 'ja'] as any)).toBe('ja') // array
-    expect(matcher.match(null)).toBe('en') // default
+    expect(matcher.match('de')).toEqual('de')
+    expect(matcher.match('JA-JP')).toEqual('ja') // normalization
+    expect(matcher.match('fr')).toEqual('en') // fallback to default language
+    expect(matcher.match([null, 'de', 'EN-US'] as any)).toEqual('de') // array
+    expect(matcher.match(['-de', 'ja'] as any)).toEqual('ja') // array
+    expect(matcher.match(null)).toEqual('en') // default
   })
 
   it('should throw when constructed with wrong languages', () => {
-    // @ts-expect-error An empty tuple cannot provide a default language.
-    expect(() => new LanguageMatcher([] as const)).toThrow(/At least one valid/)
-    expect(() => new LanguageMatcher('XX' as any)).toThrow(/At least one valid/)
-    expect(() => new LanguageMatcher(['XX'] as any)).toThrow(/At least one valid/)
+    expect(() => new LanguageMatcher([] as any)).toThrowError(/At least one valid/)
+    expect(() => new LanguageMatcher('XX' as any)).toThrowError(/At least one valid/)
+    expect(() => new LanguageMatcher(['XX'] as any)).toThrowError(/At least one valid/)
   })
 })

@@ -1,7 +1,11 @@
 {
   "extends": "../tsconfig.options.json",
   "compilerOptions": {
-    "lib": ["esnext", "dom"]
+    "lib": ["esnext", "dom"],
+    "types": ["@plugjs/expect5/globals"],
+    "paths": {
+      "@juit/vue-i18n": ["../../../lib/index.js"]
+    }
   },
-  "include": ["../lib/**/*.ts", "*.test.ts", "*.vue", "data/**/*.json"]
+  "include": ["*.test.ts"]
 }
