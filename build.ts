@@ -1,7 +1,7 @@
 import '@plugjs/cov8'
 import '@plugjs/expect5'
 import { oxc } from '@plugjs/oxc'
-import { banner, find, plugjs, rmrf } from '@plugjs/plug'
+import { $p, banner, find, log, plugjs, rmrf } from '@plugjs/plug'
 import { tsbuild } from '@plugjs/tsgo'
 
 export default plugjs({
@@ -15,11 +15,20 @@ export default plugjs({
     await tsbuild('./lib/tsconfig.json')
   },
 
+  /** Check the test types for all test files */
+  async types(): Promise<void> {
+    banner('Checking Test Types')
+
+    const configs = await find('./test/**/tsconfig.json')
+    for (const path of configs.absolutePaths()) {
+      log(`Checking Types for ${$p(path)}`)
+      await tsbuild(path)
+    }
+  },
+
   /** Run all tests */
   async test(): Promise<void> {
     banner('Running Tests')
-    await rmrf('.coverage-data') // wipe existing coverage data
-    // await tsc('test/tsconfig.json', { noEmit: true }) // type check our tests
     await find('**/*.test.*', { directory: 'test' }) // find all our test files
       .test({ coverageDir: '.coverage-data' }) // run tests
   },
@@ -27,6 +36,7 @@ export default plugjs({
   /** Run tests capturing errors, but always producing coverage */
   async coverage(): Promise<void> {
     try {
+      await rmrf('.coverage-data') // wipe existing coverage data
       await this.test()
     } finally {
       banner('Preparing coverage report')
@@ -45,14 +55,10 @@ export default plugjs({
     await oxc({ fix: this.fix === 'true' })
   },
 
-  async types(): Promise<void> {
-    banner('Checking TypeScript Types')
-    await find('./test/types/*/tsconfig.json').typescriptBuild()
-  },
-
   async default(): Promise<void> {
     await this.transpile()
     await this.types()
+    await this.coverage()
     await this.lint()
   },
 })
