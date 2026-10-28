@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createApp, nextTick } from 'vue'
 
-import { i18n, useTranslator } from '../lib'
+import { i18n, useTranslator } from '../lib/index.ts'
 import TestComponent from './test.vue'
 
 describe('I18n Plugin with Vue Apps', () => {

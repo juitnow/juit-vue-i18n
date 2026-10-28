@@ -1,4 +1,4 @@
-import { expectTypeOf } from 'vitest'
+import { expectTypeOf } from 'expect-type'
 
 import type {
   DateTimeFormatAlias,
@@ -13,7 +13,7 @@ import type {
   Translations,
   Translator,
   useTranslator,
-} from '../../lib'
+} from '../../lib/index.ts'
 import type { ComponentCustomProperties } from 'vue'
 
 // This project is isolated from the default configuration and runtime tests.

@@ -1,12 +1,18 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
 
-import { isISOCountry, isISOCurrency, isISOLanguage, ISO_COUNTRIES, ISO_LANGUAGES } from '../lib'
-import { makeTranslator } from '../lib/translator'
+import { isISOCountry, isISOCurrency, isISOLanguage, ISO_COUNTRIES, ISO_LANGUAGES } from '../lib/index.ts'
+import { makeTranslator } from '../lib/translator.ts'
 import languages from './data/iso_639-1.json' with { type: 'json' }
 import countries from './data/iso_3166-1.json' with { type: 'json' }
 
-import type { DateTimeFormatAlias, Language, NumberFormatAlias, TranslationKey, TranslationMessage } from '../lib'
-import type { Translator } from '../lib/translator'
+import type {
+  DateTimeFormatAlias,
+  Language,
+  NumberFormatAlias,
+  TranslationKey,
+  TranslationMessage,
+} from '../lib/index.ts'
+import type { Translator } from '../lib/translator.ts'
 
 declare module '../lib/index' {
   export interface I18nConfiguration {

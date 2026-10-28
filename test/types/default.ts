@@ -1,6 +1,13 @@
-import { expectTypeOf } from 'vitest'
+import { expectTypeOf } from 'expect-type'
 
-import { isISOCountry, isISOCurrency, isISOLanguage, ISO_COUNTRIES, ISO_CURRENCIES, ISO_LANGUAGES } from '../../lib'
+import {
+  isISOCountry,
+  isISOCurrency,
+  isISOLanguage,
+  ISO_COUNTRIES,
+  ISO_CURRENCIES,
+  ISO_LANGUAGES,
+} from '../../lib/index.ts'
 
 import type {
   DateTimeFormatAlias,
@@ -13,7 +20,7 @@ import type {
   TranslationKey,
   TranslationMessage,
   Translator,
-} from '../../lib'
+} from '../../lib/index.ts'
 
 // No I18nConfiguration augmentation is included in this project.
 expectTypeOf<Language>().toEqualTypeOf<ISOLanguage>()

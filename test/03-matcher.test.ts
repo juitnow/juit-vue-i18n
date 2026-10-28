@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
 
-import { LanguageMatcher } from '../lib'
+import { LanguageMatcher } from '../lib/index.ts'
 
 describe('Language Matcher', () => {
   it('should accept readonly inputs and preserve the configured language types', () => {
