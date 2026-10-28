@@ -1,22 +1,22 @@
 import { inject } from 'vue'
 
-import { isISOLanguage } from './iso-639'
-import { makeTranslator } from './translator'
+import { isISOLanguage } from './iso-639.ts'
+import { makeTranslator } from './translator.ts'
 
 import type { App } from 'vue'
-import type { ISOCurrency } from './iso-4217'
-import type { ISOLanguage } from './iso-639'
-import type { Translator } from './translator'
+import type { ISOCurrency } from './iso-4217.ts'
+import type { ISOLanguage } from './iso-639.ts'
+import type { Translator } from './translator.ts'
 
 /* ===== REFERENCE LANGUAGES, COUNTRIES, AND CURRENCIES ====================== */
 
-export { isISOCountry, ISO_COUNTRIES } from './iso-3166'
-export { isISOCurrency, ISO_CURRENCIES } from './iso-4217'
-export { isISOLanguage, ISO_LANGUAGES } from './iso-639'
+export { isISOCountry, ISO_COUNTRIES } from './iso-3166.ts'
+export { isISOCurrency, ISO_CURRENCIES } from './iso-4217.ts'
+export { isISOLanguage, ISO_LANGUAGES } from './iso-639.ts'
 
-export type * from './iso-3166'
-export type * from './iso-4217'
-export type * from './iso-639'
+export type * from './iso-3166.ts'
+export type * from './iso-4217.ts'
+export type * from './iso-639.ts'
 
 /* ===== TYPES FOR DECLARATION MERGING ====================================== */
 
@@ -132,7 +132,7 @@ export type TranslationKey = ExtractConfig<I18nConfiguration, string, 'translati
  *
  * When left unconfigured, this type will be `string`.
  */
-export type DateTimeFormatAlias = ExtractConfig<I18nConfiguration, string, 'dateTimeFormats'>
+export type DateTimeFormatAlias = ExtractConfig<I18nConfiguration, string & {}, 'dateTimeFormats'>
   | 'default' | 'short' | 'medium' | 'long' | 'full'
   | 'date' | 'shortDate' | 'mediumDate' | 'longDate' | 'fullDate'
   | 'time' | 'shortTime' | 'mediumTime' | 'longTime' | 'fullTime'
@@ -145,13 +145,13 @@ export type DateTimeFormatAlias = ExtractConfig<I18nConfiguration, string, 'date
  *
  * When left unconfigured, this type will be `string`.
  */
-export type NumberFormatAlias = ExtractConfig<I18nConfiguration, string, 'numberFormats'>
+export type NumberFormatAlias = ExtractConfig<I18nConfiguration, string & {}, 'numberFormats'>
   | 'default' | ISOCurrency
 
 /* ===== MODULE INITIALIZATION ============================================== */
 
 /* Export the translator types */
-export type * from './translator'
+export type * from './translator.ts'
 
 /**
  * Options to initialize the translations handled by the translation system.
@@ -240,10 +240,10 @@ export function i18n(app: App, optionsOrLanguage: Language | I18nOptions): App {
 
   const translator = makeTranslator(options)
 
-  app.config.globalProperties.$t = translator.t
-  app.config.globalProperties.$tc = translator.tc
-  app.config.globalProperties.$n = translator.n
-  app.config.globalProperties.$d = translator.d
+  app.config.globalProperties.$t = translator.t.bind(translator)
+  app.config.globalProperties.$tc = translator.tc.bind(translator)
+  app.config.globalProperties.$n = translator.n.bind(translator)
+  app.config.globalProperties.$d = translator.d.bind(translator)
 
   app.provide(injectionSymbol, translator)
   return app

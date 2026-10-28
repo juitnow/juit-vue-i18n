@@ -1,8 +1,8 @@
 import { computed, reactive, shallowRef, warn, watch } from 'vue'
 
-import { ISO_COUNTRIES } from './iso-3166'
-import { ISO_CURRENCIES } from './iso-4217'
-import { ISO_LANGUAGES } from './iso-639'
+import { ISO_COUNTRIES } from './iso-3166.ts'
+import { ISO_CURRENCIES } from './iso-4217.ts'
+import { ISO_LANGUAGES } from './iso-639.ts'
 
 import type {
   DateTimeFormatAlias,
@@ -14,8 +14,8 @@ import type {
   Translation,
   TranslationKey,
   TranslationMessage,
-} from './index'
-import type { ISOLanguage } from './iso-639'
+} from './index.ts'
+import type { ISOLanguage } from './iso-639.ts'
 
 /* ===== TRANSLATOR INTERFACE =============================================== */
 
@@ -99,7 +99,7 @@ export interface Translator {
    * object. Omitting it selects the `default` alias. A null or undefined
    * value produces an empty string.
    */
-  n(value?: number | bigint | null | undefined, format?: NumberFormatAlias | Intl.NumberFormatOptions): string
+  n(value?: number | bigint | null  , format?: NumberFormatAlias | Intl.NumberFormatOptions): string
 
   /**
    * Format a date and time according to the current locale.
@@ -256,7 +256,7 @@ export function makeTranslator(options: I18nOptions): Translator {
       translator.locale = new Intl.Locale(translator.language, { region: value || undefined })
     },
 
-    n(value?: number | bigint | null | undefined, format: string | Intl.NumberFormatOptions = 'default'): string {
+    n(value?: number | bigint | null  , format: string | Intl.NumberFormatOptions = 'default'): string {
       if (value == null) return '' // null or undefined produces an empty string
 
       const options = typeof format === 'string' ? numberFormats[format] : format
@@ -522,7 +522,7 @@ function replaceParams(
     format: Intl.NumberFormat,
 ): string {
   // Select the template to use based on the "n" (number) parameter
-  const n = typeof params.n === 'string' ? Number(params.n) : params.n
+  const n = typeof params['n'] === 'string' ? Number(params['n']) : params['n']
   const formatted = n === 0 ? template.zero :
     n === 1 ? template.singular :
     template.plural
