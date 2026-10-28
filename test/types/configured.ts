@@ -1,35 +1,25 @@
-import { expectTypeOf } from 'expect-type'
+import { expectTypeOf } from 'vitest'
 
-import type {
-  DateTimeFormatAlias,
-  DateTimeFormats,
-  ISOCurrency,
-  Language,
-  NumberFormatAlias,
-  NumberFormats,
-  Translation,
-  TranslationKey,
-  TranslationMessage,
-  Translations,
-  Translator,
-  useTranslator,
-} from '../../lib/index.ts'
 import type { ComponentCustomProperties } from 'vue'
+import type {
+  DateTimeFormatAlias, DateTimeFormats, ISOCurrency, Language, NumberFormatAlias,
+  NumberFormats, Translation, TranslationKey, TranslationMessage, Translations, Translator, useTranslator,
+} from '../../lib'
 
 // This project is isolated from the default configuration and runtime tests.
 const translations = {
   hello: { en: 'Hello', de: 'Hallo' },
-  cats: { en: ['one cat', '{n} cats'], de: ['eine Katze', '{n} Katzen'] },
+  cats: { en: [ 'one cat', '{n} cats' ], de: [ 'eine Katze', '{n} Katzen' ] },
 } as const satisfies Translations
 const dateTimeFormats = { customDate: { year: 'numeric' } } as const satisfies DateTimeFormats
 const numberFormats = { speed: { style: 'unit', unit: 'meter-per-second' } } as const satisfies NumberFormats
 
 declare module '../../lib/index' {
   interface I18nConfiguration {
-    languages: 'en' | 'de'
-    translationKeys: keyof typeof translations
-    dateTimeFormats: keyof typeof dateTimeFormats
-    numberFormats: keyof typeof numberFormats
+    languages: 'en' | 'de',
+    translationKeys: keyof typeof translations,
+    dateTimeFormats: keyof typeof dateTimeFormats,
+    numberFormats: keyof typeof numberFormats,
   }
 }
 
@@ -37,22 +27,9 @@ expectTypeOf<Language>().toEqualTypeOf<'en' | 'de'>()
 expectTypeOf<TranslationKey>().toEqualTypeOf<'hello' | 'cats'>()
 expectTypeOf<NumberFormatAlias>().toEqualTypeOf<'speed' | 'default' | ISOCurrency>()
 expectTypeOf<DateTimeFormatAlias>().toEqualTypeOf<
-  | 'customDate'
-  | 'default'
-  | 'short'
-  | 'medium'
-  | 'long'
-  | 'full'
-  | 'date'
-  | 'shortDate'
-  | 'mediumDate'
-  | 'longDate'
-  | 'fullDate'
-  | 'time'
-  | 'shortTime'
-  | 'mediumTime'
-  | 'longTime'
-  | 'fullTime'
+  'customDate' | 'default' | 'short' | 'medium' | 'long' | 'full'
+  | 'date' | 'shortDate' | 'mediumDate' | 'longDate' | 'fullDate'
+  | 'time' | 'shortTime' | 'mediumTime' | 'longTime' | 'fullTime'
 >()
 expectTypeOf<Translation['en']>().toEqualTypeOf<TranslationMessage>()
 expectTypeOf<Translation['de-AT']>().toEqualTypeOf<TranslationMessage | undefined>()
@@ -69,8 +46,8 @@ expectTypeOf(translator.t('hello', { name: 'Alice', n: 2 })).toEqualTypeOf<strin
 expectTypeOf(translator.tc('cats', 2)).toEqualTypeOf<string>()
 translator.t(translations.hello)
 translator.tc(translations.cats, 2)
-translator.t({ 'en': ['Hello'], 'de': 'Hallo', 'de-AT': ['Servus'] })
-translator.utils.updateTranslations({ hello: { 'de-AT': ['Servus'] }, cats: { en: 'cats' } })
+translator.t({ 'en': [ 'Hello' ], 'de': 'Hallo', 'de-AT': [ 'Servus' ] })
+translator.utils.updateTranslations({ hello: { 'de-AT': [ 'Servus' ] }, cats: { en: 'cats' } })
 translator.n(42, 'speed')
 translator.n(42, 'EUR')
 translator.n(42, 'default')
