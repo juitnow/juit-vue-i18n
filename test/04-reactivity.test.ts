@@ -69,8 +69,9 @@ describe('Translator reactivity', () => {
           dateStyle: 'short',
           timeZone: 'UTC',
         }).format(date)
-        const content = (kind: string): string | null | undefined =>
-          dom.window.document.querySelector(`[data-kind="${kind}"]`)?.textContent
+        function content(kind: string): string | null | undefined {
+          return dom.window.document.querySelector(`[data-kind="${kind}"]`)?.textContent
+        }
 
         expect(content('text')).toEqual(text)
         expect(content('plural')).toEqual(`${number} ${cats}`)
@@ -140,8 +141,9 @@ describe('Translator reactivity', () => {
                   }
                 : undefined,
           })
-          const contents = (): (string | null)[] =>
-            [...dom.window.document.querySelectorAll('span')].map((element) => element.textContent)
+          function contents(): (string | null)[] {
+            return [...dom.window.document.querySelectorAll('span')].map((element) => element.textContent)
+          }
 
           try {
             app.mount('#app')
