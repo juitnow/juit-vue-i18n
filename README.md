@@ -19,6 +19,7 @@ required translation languages and translation keys.
   - [Date and Time Format Aliases](#date-and-time-format-aliases)
   - [Number Format Aliases](#number-format-aliases)
 - [Usage](#usage)
+  - [Usage in Templates](#usage-in-templates)
   - [Switching language](#switching-language)
 - [Translating messages](#translating-messages)
   - [Parameterizing translations](#parameterizing-translations)
@@ -30,7 +31,9 @@ required translation languages and translation keys.
 - [Updating Translations](#updating-translations)
 - [Language Matching](#language-matching)
 - [Remarks](#remarks)
-- [Legal Stuff](#legal-stuff)
+- Legal Stuff
+  - [Copyright Notice](NOTICE.md)
+  - [License](LICENSE.md)
 
 ## Installation
 
@@ -40,7 +43,7 @@ As usual, install with npm (or the cool package manager du jour):
 npm install '@juit/vue-i18n'
 ```
 
-Then add the plugin to your Vue app:
+Then add the plugin to your Vue app before mounting:
 
 ```typescript
 import { i18n } from '@juit/vue-i18n'
@@ -64,8 +67,8 @@ const app = createApp(MyApp).use(i18n, {
 The plugin can be configured with a language code string (the default
 language) or an object containing the following options:
 
-- `defaultLanguage`: **(required)** the default language to use; all
-  translations should be available in this language.
+- `defaultLanguage`: **(required)** a base language, locale string, or
+  `Intl.Locale`. Supply each translation in its base language.
 - `defaultTimeZone`: the default time zone to use when formatting dates
   (defaults to the _local_ time zone).
 - `translations`: an object containing the translations for the messages to
@@ -147,8 +150,10 @@ const app = createApp(MyApp).use(i18n, {
 })
 ```
 
-By default, numbers use the locale's standard formatting. Each valid ISO 4217
-currency code (e.g. `EUR`, `USD`, ...) can be used as an alias.
+By default, numbers use the locale's standard formatting. Currency codes
+reported by the runtime's `Intl.supportedValuesOf('currency')` (e.g. `EUR`,
+`USD`, ...) can be used as aliases. The static currency type may differ from
+runtime support.
 
 To configure the default number format, use the `default` key.
 
@@ -162,6 +167,39 @@ import { useTranslator } from '@juit/vue-i18n'
 
 const translator = useTranslator()
 ```
+
+Use:
+
+- `translator.t(key, params?)` to [translate a message](#translating-messages),
+- `translator.tc(key, count, params?)` to select a [plural form](#pluralization),
+- `translator.n(value, format?)` to [format numbers](#formatting-numbers) and
+- `translator.d(value, format?, timeZone?)` to [format dates and times](#formatting-dates).
+
+### Usage in Templates
+
+The plugin registers `$t(...)`, `$tc(...)`, `$n(...)`, and `$d(...)` as template
+helpers. They accept the same arguments as the corresponding translator
+methods; you do not need to call `useTranslator()` to use them in a template.
+
+Use:
+
+- `$t(key, params?)` for [translations](#translating-messages),
+- `$tc(key, count, params?)` for [pluralization](#pluralization),
+- `$n(value, format?)` for [numbers](#formatting-numbers) and
+- `$d(value, format?, timeZone?)` for [dates and times](#formatting-dates).
+
+For example, with `hello` and `cats` translation keys configured:
+
+```html
+<template>
+  <p>{{ $t('hello') }}</p>
+  <p>{{ $tc('cats', 2) }}</p>
+  <p>{{ $n(1234.5, 'EUR') }}</p>
+  <p>{{ $d(new Date(), 'shortDate') }}</p>
+</template>
+```
+
+These helpers update the rendered text when the locale or translations change.
 
 ### Switching language
 
@@ -180,12 +218,14 @@ translator.language = 'fr' // we have switched to French, and the locale is now 
 translator.locale = new Intl.Locale('de-AT')
 ```
 
-Because of reactivity, all translations will be updated to the new locale.
+Translations in templates and computed values update when the locale changes.
+A string translated once during setup does not update itself; use
+`computed(() => translator.t(...))` when it must follow locale changes.
 
 ## Translating messages
 
-The function for translating messages is exposed as `translator.t(...)` or
-(within components) the `$t(...)` function.
+The function for translating messages is exposed as `translator.t(...)`
+(or `$t(...)` in templates).
 
 This function takes a translation _key_ specified during configuration
 (see above).
@@ -199,11 +239,20 @@ const hello = translator.t('hello')
 // the "hello" string will be "Hello, world!" or "Hallo, Welt!"
 ```
 
+In a template, use `$t(...)` with the same arguments:
+
+```html
+<template>
+  <p>{{ $t('hello') }}</p>
+</template>
+```
+
 If a translation key is not configured, the translator logs a warning and
 renders the key literally inside square brackets: `missing` becomes `[missing]`
 for every count. Pipes, placeholders, and escapes in missing keys are not
 interpreted. Adding the translation through `updateTranslations(...)` replaces
-the fallback and updates reactive consumers.
+the fallback and updates reactive consumers. A configured key with no usable
+message in the fallback languages logs a warning and returns an empty string.
 
 It can also take an inline translation:
 
@@ -267,8 +316,9 @@ const string = translator.t(
 
 ### Pluralization
 
-The translator supports basic pluralization rules by separating
-translation messages with the `|` (pipe) character.
+The `translator.tc(...)` function (or `$tc(...)` in templates) supports basic
+pluralization by separating translation messages with the `|` (pipe) character. Escape a literal pipe as
+`\|`, or use a tuple as shown below.
 
 Messages can contain two variants, `singular|plural`, or three variants,
 `zero|singular|plural`. The singular variant is used for one, and the plural
@@ -276,11 +326,17 @@ variant for other numbers. If a zero variant is provided, it is used for zero
 instead of the plural variant.
 
 To specify the number used for pluralization, either use the `n` parameter
-or pass the number as the second argument to `tc(...)`.
+or pass the number as the second argument to `tc(...)`. A supplied `params.n`
+overrides that argument for both display and variant selection.
 
 For example:
 
 ```typescript
+import { useTranslator } from '@juit/vue-i18n'
+
+const translator = useTranslator()
+const n = 2
+
 const string = translator.t(
   {
     en: 'no cats | one cat | {n} cats',
@@ -303,6 +359,14 @@ const string = translator.tc(
   },
   n,
 )
+```
+
+For a configured `cats` key, the template equivalent is:
+
+```html
+<template>
+  <p>{{ $tc('cats', 2) }}</p>
+</template>
 ```
 
 Messages can also use explicit tuples instead of pipe-delimited strings:
@@ -329,7 +393,8 @@ original array later cannot change stored messages or cached results.
 
 ## Formatting numbers
 
-The `n(...)` function can be used to format numbers in the current locale:
+The `translator.n(...)` function (or `$n(...)` in templates) can be used to
+format numbers in the current locale:
 
 ```typescript
 import { useTranslator } from '@juit/vue-i18n'
@@ -351,6 +416,15 @@ const amount = translator.n(1234.5, 'USD')
 // the "amount" string will be "$1,234.50" in en-US
 ```
 
+In a template, use `$n(...)` with the same value and format:
+
+```html
+<template>
+  <p>{{ $n(1234.5) }}</p>
+  <p>{{ $n(1234.5, 'USD') }}</p>
+</template>
+```
+
 An [`Intl.NumberFormatOptions`][4] object can also be specified
 as a second parameter to fine-tune the formatting.
 
@@ -359,11 +433,11 @@ configuring the plugin.
 
 ## Formatting dates
 
-The `d(...)` function can be used to format date and time values in the current
-locale.
+The `translator.d(...)` function (or `$d(...)` in templates) can be used to
+format date and time values in the current locale.
 
 When the second parameter is a string, it is considered to be one of the
-_aliases_ configured when the plugin is set up.
+built-in or custom _aliases_ configured when the plugin is set up.
 
 ```typescript
 import { useTranslator } from '@juit/vue-i18n'
@@ -375,12 +449,26 @@ const dateOnly = translator.d(new Date(), 'date') // e.g. '03.02.2025' in de-DE
 const timeOnly = translator.d(new Date(), 'time') // e.g. '18:08:05' in de-DE
 ```
 
+In a template, use `$d(...)` with the same arguments:
+
+```html
+<template>
+  <p>{{ $d(new Date()) }}</p>
+  <p>{{ $d(new Date(), 'date') }}</p>
+  <p>{{ $d(new Date(), 'time', 'UTC') }}</p>
+</template>
+```
+
 An [`Intl.DateTimeFormatOptions`][5] object can also be specified
-as a second parameter to fine-tune the formatting.
+as a second parameter to fine-tune the formatting. Inputs may be a `Date`,
+a date string, or milliseconds since the Unix epoch. Null, undefined, and an
+empty string produce an empty string.
 
 The third parameter, if specified, can be used to override the time zone used
 when formatting the date. This is useful when time zones are specified in
-the definitions of date and time format _aliases_ (see above):
+the definitions of date and time format _aliases_ (see above). Time zone
+precedence is the explicit argument, the format's `timeZone`, the configured
+`defaultTimeZone`, then the runtime default:
 
 ```typescript
 import { useTranslator } from '@juit/vue-i18n'
@@ -402,10 +490,10 @@ To do so, we can _merge_ the `I18nConfiguration` interface of this package
 with our application-specific configuration. The following properties can
 be defined:
 
-- `languages`: the list of supported languages for the application. These
-  are ISO 639-1 language codes, and when specified, _every_
-  translation _must_ include a translation for each.
-- `translationKeys`: the list of translation keys known by the application.
+- `languages`: a union of supported ISO 639-1 language codes. When configured
+  with a subset of codes, _every_ translation _must_ include each base language.
+  Regional variants remain optional.
+- `translationKeys`: a union of translation keys known by the application.
   These are the arbitrary keys used to identify the
   messages to be translated with the `t` and `tc`
   methods of `Translator`.
@@ -413,9 +501,17 @@ be defined:
   application.
 - `numberFormats`: the number format _aliases_ used by the application.
 
-To configure the types, follow the example below:
+To configure the types, follow the example below. Keep the augmentation in a
+module included by your application's TypeScript configuration:
 
 ```typescript
+import { i18n } from '@juit/vue-i18n'
+import { createApp } from 'vue'
+
+import MyApp from './app.vue'
+
+import type { DateTimeFormats, NumberFormats, Translations } from '@juit/vue-i18n'
+
 const translations = {
   hello: { en: 'Hello, world!', de: 'Hallo, Welt!' },
 } as const satisfies Translations
@@ -461,7 +557,9 @@ In the same way, if we pass any string other than `hello` to `t(...)` or
 `tc(...)`, TypeScript will report an invalid key.
 
 Date, time, and number format alias types will also be augmented using the
-customizations specified in `dateTimeFormats` and `numberFormats`.
+customizations specified in `dateTimeFormats` and `numberFormats`. Built-in
+aliases remain available. Declaration merging only configures types; pass the
+same dictionaries to the plugin to register them at runtime, as shown above.
 
 ## Checking Translations
 
@@ -475,6 +573,8 @@ resolved for the current locale. Calls in templates and computed values react
 when `updateTranslations(...)` adds a key.
 
 ```typescript
+import { computed } from 'vue'
+
 const available = computed(() => translator.hasTranslation('hello'))
 ```
 
@@ -555,7 +655,7 @@ a non-empty array of codes. The first valid language is the default, used
 whenever no preference matches.
 
 The `match(...)` method accepts a string, an array of strings in preference
-order, `null`, or `undefined`. It returns the **first supported preference**,
+order (including readonly arrays), `null`, or `undefined`. It returns the **first supported preference**,
 regardless of the order of the available languages:
 
 ```typescript
@@ -583,11 +683,6 @@ calendar and numbering-system preferences. For example,
 Changing `translator.language` preserves the current region: switching from
 `en-CA` to `fr` produces `fr-CA`. Changing `translator.region` preserves the
 language; setting it to `undefined` removes the region.
-
-## Legal Stuff
-
-- [Copyright Notice](NOTICE.md)
-- [License](LICENSE.md)
 
 [1]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale
 [2]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat
