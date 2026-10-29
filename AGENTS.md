@@ -18,7 +18,7 @@ consumer application's own build and test commands when working there.
   on native `Intl` APIs, including `Intl.supportedValuesOf`; it provides no
   polyfills.
 - Import runtime APIs and types from `@juit/vue-i18n`. Do not import internal
-  `lib/` files or use `makeTranslator` in consumer code.
+  `lib/` files or instantiate the internal translator constructor in consumer code.
 - Register `app.use(i18n, options)` before mounting the app. `defaultLanguage`
   is required; provide a translation in its base language for each message.
 - Language selection is explicit. For browser preferences, use
@@ -88,8 +88,12 @@ dictionaries to the plugin. See [Configuring Types](README.md#configuring-types)
 - `lib/index.ts`: public exports, configuration types, Vue plugin installation,
   `useTranslator()`, component global types, and `LanguageMatcher`.
 - `lib/translator.ts`: reactive locale state, translation parsing and caching,
-  number/date formatting, and translation updates. `makeTranslator` is an
-  internal factory; it is not a runtime export of the package entry point.
+  number/date formatting, and translation updates. The module exports the
+  `TranslatorImpl` constructor as `Translator` for internal use; the package
+  entry point exports only the `Translator` type. The class owns its message map, parsed cache, locale
+  and revision refs. Mark the instance raw: internal refs provide reactivity
+  and must not be unwrapped by a Vue proxy. Keep public methods callable
+  when extracted from the instance.
 - `lib/iso-639.ts`, `lib/iso-3166.ts`, `lib/iso-4217.ts`: reference types,
   frozen code arrays, and type guards.
 - `test/01-i18n.test.ts`: translator and reference-data runtime tests, creating
@@ -128,11 +132,13 @@ vue-tsc, and ESLint workflow no longer applies.
 | `npm run build lint fix=true`                 | Apply lint and formatting fixes.                                                        |
 | `npm run dev`                                 | Watch `lib/` and `test/` and rerun the coverage task.                                   |
 
-Runtime tests import `@juit/vue-i18n`, resolving the package's emitted entry
-point in `dist/`. Run the full build, or `transpile` before standalone test or
-coverage tasks, after changing library sources. Relative source imports use
-explicit `.ts` extensions, which the compiler rewrites in emitted JavaScript.
-Declarations are emitted per module; this build does not bundle them.
+Runtime tests import `../lib/index.ts` directly; PlugJS transpiles the source
+modules while running tests. Standalone test and coverage tasks, including
+watch mode, do not require `dist/` or a prior transpile task. Compiler-only
+fixtures retain package-name imports with paths pointing to the library source.
+Relative source imports use explicit `.ts` extensions, which the compiler
+rewrites in emitted JavaScript. Declarations are emitted per module; this build
+does not bundle them.
 
 Coverage requires 100% overall and per source file. Raw data lives in
 `.coverage-data/`; reports are written to `coverage/`. A coverage failure can
@@ -243,3 +249,19 @@ run lint and verify that code/types are unchanged. Do not hand-edit generated
 `dist/`, `.coverage-data/`, or `coverage/` files. Match the existing TypeScript
 style and keep README examples and source comments consistent with changed
 behavior.
+
+## Code style
+
+Prefer regular class and object methods and named `function` declarations.
+Do not use arrow-function class fields or assign standalone functions to
+variables unless required for typing or another concrete constraint. Inline
+callbacks may use arrows when useful for lexical `this` or concise iteration.
+When methods must support detached calls, declare regular methods and bind them
+in the constructor rather than defining functions as class properties.
+
+Keep class fields minimal: use constructor locals for values only needed during
+initialization, including values captured by constructor-created callbacks.
+Store a value on the instance only when methods need to access it later.
+
+Use TypeScript `private` members prefixed with `_` rather than JavaScript
+`#private` members.
