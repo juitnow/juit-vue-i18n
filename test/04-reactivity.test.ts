@@ -1,5 +1,5 @@
 import { JSDOM } from 'jsdom'
-import { compile, computed, createApp, defineComponent, nextTick, reactive, ref } from 'vue'
+import { compile, computed, createApp, defineComponent, nextTick, reactive, ref, shallowRef, watchEffect } from 'vue'
 
 import { i18n, useTranslator } from '../lib/index.ts'
 import { createJSDomApp } from './jsdom-vue.ts'
@@ -9,6 +9,39 @@ import type { Translator } from '../lib/index.ts'
 describe('Translator reactivity', () => {
   const amount = 1234.56
   const date = new Date('2026-01-02T12:00:00Z')
+
+  it('should not subscribe a translation-loading watchEffect to translation updates', async () => {
+    const app = createApp({}).use(i18n, 'en')
+    const translator = app.runWithContext(() => useTranslator())
+    const messages = shallowRef({ hello: { en: 'Loaded messages' } })
+    let runs = 0
+    const stop = watchEffect(() => {
+      runs++
+      translator.updateTranslations(messages.value)
+    })
+    const text = computed(() => translator.t('hello'))
+
+    try {
+      expect(runs).toEqual(1)
+      expect(text.value).toEqual('Loaded messages')
+
+      // Independent updates must notify consumers without rerunning the loader.
+      for (const message of ['Manual update', 'Another manual update']) {
+        translator.updateTranslations({ hello: { en: message } })
+        await nextTick()
+        expect(runs).toEqual(1)
+        expect(text.value).toEqual(message)
+      }
+
+      // The loader should still react to changes in its actual source.
+      messages.value = { hello: { en: 'New loaded messages' } }
+      await nextTick()
+      expect(runs).toEqual(2)
+      expect(text.value).toEqual('New loaded messages')
+    } finally {
+      stop()
+    }
+  })
 
   it('should update translations beside optimized static content across conditional mounts', async () => {
     const dom = new JSDOM('<!doctype html><html><body><div id="app"></div></body></html>')

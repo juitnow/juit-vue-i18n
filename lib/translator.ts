@@ -197,7 +197,7 @@ class TranslatorImpl implements Translator {
   private readonly _numberFormats: NumberFormats
   private readonly _locale: ShallowRef<Intl.Locale>
   private readonly _languages: ComputedRef<LanguageKeys>
-  private readonly _revision = shallowRef(0)
+  private readonly _translationSignal = shallowRef<object>({})
   private readonly _cache = new Map<string, Map<string, TranslationTemplate>>()
 
   /* ===== CONSTRUCTOR ====================================================== */
@@ -332,7 +332,7 @@ class TranslatorImpl implements Translator {
 
   tc(translation: TranslationKey | Translation, n: number, params?: TranslationParams): string {
     // Track message updates in component renders and computed translations.
-    void this._revision.value
+    void this._translationSignal.value
     const template = this._getTemplate(translation, this._languages.value)
     const format = new Intl.NumberFormat(this.locale, this._numberFormats['default'])
     return replaceParams(template, { n, ...params }, format)
@@ -388,7 +388,8 @@ class TranslatorImpl implements Translator {
     // Invalidate templates before notifying reactive consumers.
     if (updated) {
       this._cache.clear()
-      this._revision.value++
+      // Write a fresh identity without tracking the caller as a consumer.
+      this._translationSignal.value = {}
     }
   }
 

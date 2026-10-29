@@ -91,7 +91,7 @@ dictionaries to the plugin. See [Configuring Types](README.md#configuring-types)
   number/date formatting, and translation updates. The module exports the
   `TranslatorImpl` constructor as `Translator` for internal use; the package
   entry point exports only the `Translator` type. The class owns its message map, parsed cache, locale
-  and revision refs. Mark the instance raw: internal refs provide reactivity
+  and translation signal refs. Mark the instance raw: internal refs provide reactivity
   and must not be unwrapped by a Vue proxy. Keep public methods callable
   when extracted from the instance.
 - `lib/iso-639.ts`, `lib/iso-3166.ts`, `lib/iso-4217.ts`: reference types,
@@ -210,7 +210,10 @@ workflow stops on failure, so run lint separately if coverage blocks it.
 - `translator.updateTranslations(...)` is the primary update API; keep
   `translator.utils.updateTranslations(...)` as a deprecated compatibility alias.
 - Updates are validated and copied before stored messages are changed. They
-  invalidate parsed caches and increment a per-translator reactive revision.
+  invalidate parsed caches and replace a per-translator `_translationSignal`
+  ref value with a fresh object. Translation reads track this signal; updates
+  must only write it so a loading `watchEffect` does not subscribe itself to
+  translation changes.
   Both message updates and locale changes are reactive. Ignored or invalid
   updates do not notify consumers.
 - Preserve `Map` storage for messages and null-prototype format dictionaries:
