@@ -10,6 +10,79 @@ describe('Translator reactivity', () => {
   const amount = 1234.56
   const date = new Date('2026-01-02T12:00:00Z')
 
+  it('should update translations beside optimized static content across conditional mounts', async () => {
+    const dom = new JSDOM('<!doctype html><html><body><div id="app"></div></body></html>')
+    const visible = ref(true)
+    const count = ref(1)
+    let translator!: Translator
+    const component = defineComponent({
+      setup() {
+        translator = useTranslator()
+        return { visible, count }
+      },
+      // Large static content exercises Vue's static HTML insertion optimization.
+      render: compile(`<div>
+        <section v-if="visible">
+          <aside>${'<span><em>Static content</em></span>'.repeat(30)}</aside>
+          <p data-translated>{{ $t('hello') }}</p>
+          <p data-translated>{{ $tc('cats', count) }}</p>
+        </section>
+        <footer>After the conditional section</footer>
+      </div>`),
+    })
+    const app = createJSDomApp(dom, component).use(i18n, {
+      defaultLanguage: 'en',
+      translations: {
+        hello: { en: 'Hello', de: 'Hallo' },
+        cats: { en: ['one cat', '{n} cats'], de: ['eine Katze', '{n} Katzen'] },
+      },
+    })
+    const document = dom.window.document
+    const host = document.querySelector('#app')!
+
+    function expectSection(text: string, plural: string): void {
+      expect([...document.querySelectorAll('[data-translated]')].map((element) => element.textContent)).toEqual([
+        text,
+        plural,
+      ])
+      expect(document.querySelectorAll('aside em').length).toEqual(30)
+      expect(document.querySelector('section')?.nextElementSibling?.tagName).toEqual('FOOTER')
+    }
+
+    try {
+      app.mount('#app')
+      expectSection('Hello', 'one cat')
+      const staticContent = document.querySelector('aside')
+
+      translator.language = 'de'
+      count.value = 2
+      await nextTick()
+      expectSection('Hallo', '2 Katzen')
+      expect(document.querySelector('aside')).toStrictlyEqual(staticContent)
+
+      translator.updateTranslations({ hello: { de: 'Servus' }, cats: { de: ['ein Kätzchen', '{n} Kätzchen'] } })
+      await nextTick()
+      expectSection('Servus', '2 Kätzchen')
+      expect(document.querySelector('aside')).toStrictlyEqual(staticContent)
+
+      visible.value = false
+      await nextTick()
+      expect(document.querySelector('section')).toBeNull()
+      expect(document.querySelectorAll('aside em').length).toEqual(0)
+
+      // Recreated sections must use the latest messages and locale.
+      translator.language = 'en'
+      translator.updateTranslations({ hello: { en: 'Welcome' } })
+      visible.value = true
+      await nextTick()
+      expectSection('Welcome', '2 cats')
+    } finally {
+      app.unmount()
+      dom.window.close()
+    }
+    expect(host.childNodes.length).toEqual(0)
+  })
+
   for (const container of ['ref', 'reactive'] as const) {
     it(`should preserve locale access and reactivity inside a ${container} container`, () => {
       const app = createApp({}).use(i18n, {
