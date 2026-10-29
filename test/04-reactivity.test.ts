@@ -105,56 +105,62 @@ describe('Translator reactivity', () => {
       }
     })
 
-    it(`should update HTML after updating translations using ${mode}`, async () => {
-      const dom = new JSDOM('<!doctype html><html><body><div id="app"></div></body></html>')
-      let translator!: Translator
-      const component = defineComponent({
-        setup() {
-          translator = useTranslator()
-          return {
-            text: computed(() => translator.t('hello', { name: 'Alice' })),
-            plural: computed(() => translator.tc('cats', 2)),
-          }
-        },
-        render: compile(
-          mode === 'template globals'
-            ? `<div>
+    for (const initialMessages of ['existing', 'missing'] as const) {
+      it(`should update HTML after updating ${initialMessages} translations using ${mode}`, async () => {
+        const dom = new JSDOM('<!doctype html><html><body><div id="app"></div></body></html>')
+        let translator!: Translator
+        const component = defineComponent({
+          setup() {
+            translator = useTranslator()
+            return {
+              text: computed(() => translator.t('hello', { name: 'Alice' })),
+              plural: computed(() => translator.tc('cats', 2)),
+            }
+          },
+          render: compile(
+            mode === 'template globals'
+              ? `<div>
                 <span>{{ $t('hello', { name: 'Alice' }) }}</span>
                 <span>{{ $tc('cats', 2) }}</span>
               </div>`
-            : `<div>
+              : `<div>
                 <span>{{ text }}</span>
                 <span>{{ plural }}</span>
               </div>`,
-        ),
-      })
-      const app = createJSDomApp(dom, component).use(i18n, {
-        defaultLanguage: 'en',
-        translations: {
-          hello: { en: 'Hello, {name}!', de: 'Hallo, {name}!' },
-          cats: { en: ['one cat', '{n} cats'], de: ['eine Katze', '{n} Katzen'] },
-        },
-      })
-      const contents = (): (string | null)[] =>
-        [...dom.window.document.querySelectorAll('span')].map((element) => element.textContent)
-
-      try {
-        app.mount('#app')
-        expect(contents()).toEqual(['Hello, Alice!', '2 cats'])
-
-        // Updating messages alone should invalidate the rendered translations.
-        // Do not change locale or force a component render to make this pass.
-        translator.utils.updateTranslations({
-          hello: { en: 'Welcome, {name}!' },
-          cats: { en: ['one kitten', '{n} kittens'] },
+          ),
         })
-        await nextTick()
+        const app = createJSDomApp(dom, component).use(i18n, {
+          defaultLanguage: 'en',
+          translations:
+            initialMessages === 'existing'
+              ? {
+                  hello: { en: 'Hello, {name}!', de: 'Hallo, {name}!' },
+                  cats: { en: ['one cat', '{n} cats'], de: ['eine Katze', '{n} Katzen'] },
+                }
+              : undefined,
+        })
+        const contents = (): (string | null)[] =>
+          [...dom.window.document.querySelectorAll('span')].map((element) => element.textContent)
 
-        expect(contents()).toEqual(['Welcome, Alice!', '2 kittens'])
-      } finally {
-        app.unmount()
-        dom.window.close()
-      }
-    })
+        try {
+          app.mount('#app')
+          // Missing keys render literally and populate the fallback template cache.
+          expect(contents()).toEqual(initialMessages === 'existing' ? ['Hello, Alice!', '2 cats'] : ['hello', 'cats'])
+
+          // Updating messages alone should invalidate the rendered translations.
+          // Do not change locale or force a component render to make this pass.
+          translator.utils.updateTranslations({
+            hello: { en: 'Welcome, {name}!' },
+            cats: { en: ['one kitten', '{n} kittens'] },
+          })
+          await nextTick()
+
+          expect(contents()).toEqual(['Welcome, Alice!', '2 kittens'])
+        } finally {
+          app.unmount()
+          dom.window.close()
+        }
+      })
+    }
   }
 })
