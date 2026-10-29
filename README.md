@@ -490,8 +490,17 @@ those types.
 Empty strings and `undefined` values are ignored; they cannot be used to
 delete an existing translation. The method returns nothing and clears the
 translation cache when an update is applied, so subsequent calls to `t(...)`
-and `tc(...)` use the updated messages. Updating translations alone does not
-trigger a Vue component re-render.
+and `tc(...)` use the updated messages. Updates also invalidate computed
+translations and schedule Vue components using `$t`, `$tc`, or the translator
+methods to render again. Use translations in templates or in
+`computed(() => translator.t(...))` to follow these changes; a string translated
+once does not update itself. Await Vue's `nextTick()` before reading the updated
+DOM.
+
+Each translator tracks its own updates. Applying messages causes all reactive
+translations using that translator to reevaluate, including keys not present in
+the update. Updates containing only ignored values do not trigger reevaluation.
+Invalid updates are rejected before any messages or reactive state change.
 
 ## Language Matching
 
