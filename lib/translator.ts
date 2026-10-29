@@ -135,7 +135,7 @@ export interface Translator {
      * Merge translations and clear cached templates. Empty strings and
      * undefined values are ignored; use a tuple containing an empty string
      * for an intentionally blank message. Tuples are copied before storing.
-     * Updates affect subsequent calls but do not trigger reactive updates.
+     * Updates invalidate computed translations and schedule component renders.
      */
     updateTranslations(translations: Partial<Record<TranslationKey, Partial<Translation>>>): void
   }
@@ -170,6 +170,7 @@ export function makeTranslator(options: I18nOptions): Translator {
   const defaultTimeZone = options.defaultTimeZone
 
   // Snapshot the translations, including copies of message tuples.
+  const revision = shallowRef(0)
   const translations: InternalTranslations = new Map()
   Object.entries(options.translations ?? {}).forEach(([key, value]) => {
     translations.set(key, copyTranslation(value))
@@ -274,6 +275,8 @@ export function makeTranslator(options: I18nOptions): Translator {
     },
 
     tc(translation: TranslationKey | Translation, n: number, params?: TranslationParams): string {
+      // Track message updates in component renders and computed translations.
+      void revision.value
       const template = getTemplate(translations, translation, languages.value)
       const format = new Intl.NumberFormat(translator.locale, numberFormats['default'])
       return replaceParams(template, { n, ...params }, format)
@@ -340,9 +343,11 @@ export function makeTranslator(options: I18nOptions): Translator {
           }
         }
 
-        // Clear the cache for the updated translations
-        // istanbul ignore else // No need to clear the cache if no updates were made.
-        if (updated) caches.delete(translations)
+        // Invalidate templates before notifying reactive consumers.
+        if (updated) {
+          caches.delete(translations)
+          revision.value++
+        }
       },
     },
   } as const satisfies Translator
