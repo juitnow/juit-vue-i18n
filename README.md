@@ -458,7 +458,11 @@ customizations specified in `dateTimeFormats` and `numberFormats`.
 
 ## Updating Translations
 
-Use `translator.utils.updateTranslations(...)` to add or change translations
+`translator.utils.updateTranslations(...)` is deprecated. Use
+`translator.updateTranslations(...)` instead; the old method remains available
+as a backward-compatible alias with the same behavior.
+
+Use `translator.updateTranslations(...)` to add or change translations
 after the plugin has been configured, for example when loading messages from
 a server. Pass an object keyed by translation key, with language codes and
 their translated messages as values:
@@ -468,7 +472,7 @@ import { useTranslator } from '@juit/vue-i18n'
 
 const translator = useTranslator()
 
-translator.utils.updateTranslations({
+translator.updateTranslations({
   hello: {
     en: 'Hello again!',
   },

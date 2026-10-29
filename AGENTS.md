@@ -75,10 +75,10 @@ dictionaries to the plugin. See [Configuring Types](README.md#configuring-types)
 - Prefer tuples when messages contain literal pipes. Use `as const satisfies
   Translations` to retain tuple and key inference. Parameters accept strings
   and numbers; translations produce plain strings, not Vue components.
-- For asynchronously loaded messages, use `utils.updateTranslations(...)`
-  rather than mutating the original dictionary. Updates are not reactive:
-  coordinate loading with application state so consumers evaluate translations
-  again after loading completes.
+- For asynchronously loaded messages, use `updateTranslations(...)`
+  rather than mutating the original dictionary. Updates invalidate computed
+  translations and schedule component renders; await `nextTick()` before
+  reading the updated DOM.
 - For server rendering, initialize a translator per app/request. Choose
   matching initial locales and explicit time zones on server and client when
   formatted output must agree.
@@ -197,9 +197,12 @@ workflow stops on failure, so run lint separately if coverage blocks it.
 - Parsed templates contain literal strings and `{ param: string }` tokens.
   Cache them independently of parameter values. Caches are scoped to the
   translator's translation map, current language/region, and message key.
+- `translator.updateTranslations(...)` is the primary update API; keep
+  `translator.utils.updateTranslations(...)` as a deprecated compatibility alias.
 - Updates are validated and copied before stored messages are changed. They
-  invalidate parsed caches but intentionally do not trigger Vue reactivity.
-  Locale changes are reactive.
+  invalidate parsed caches and increment a per-translator reactive revision.
+  Both message updates and locale changes are reactive. Ignored or invalid
+  updates do not notify consumers.
 - Preserve `Map` storage for messages and null-prototype format dictionaries:
   keys such as `constructor` and `__proto__` must not resolve inherited entries.
 
