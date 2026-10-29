@@ -1,3 +1,5 @@
+import { mock } from 'node:test'
+
 import { JSDOM } from 'jsdom'
 import { defineComponent } from 'vue'
 
@@ -21,6 +23,16 @@ declare module '../lib/index.ts' {
   export interface I18nConfiguration {
     languages: 'de' | 'en'
     translationKeys: 'hello' | 'cats'
+  }
+}
+
+function captureWarnings(run: () => void): string[] {
+  const warning = mock.method(console, 'warn', () => {})
+  try {
+    run()
+    return warning.mock.calls.map((call) => String(call.arguments[0]))
+  } finally {
+    warning.mock.restore()
   }
 }
 
@@ -987,24 +999,37 @@ describe('I18N Plugin', () => {
 
   describe('Edge Cases', () => {
     it('should warn with invalid locales', () => {
-      const translator = makeTranslator({ defaultLanguage: new Intl.Locale('xx-ZZ') })
+      const warnings = captureWarnings(() => {
+        const translator = makeTranslator({ defaultLanguage: new Intl.Locale('xx-ZZ') })
 
-      expect(translator.locale.language).toEqual('xx')
-      expect(translator.locale.region).toEqual('ZZ')
-      expect(translator.language).toEqual('xx')
-      expect(translator.region).toEqual('ZZ')
+        expect(translator.locale.language).toEqual('xx')
+        expect(translator.locale.region).toEqual('ZZ')
+        expect(translator.language).toEqual('xx')
+        expect(translator.region).toEqual('ZZ')
 
-      translator.language = 'zz' as any
-      translator.region = 'XX' as any
-      expect(translator.language).toEqual('zz')
-      expect(translator.region).toEqual('XX')
-      expect(translator.locale.toString()).toEqual('zz-XX')
+        translator.language = 'zz' as any
+        translator.region = 'XX' as any
+        expect(translator.language).toEqual('zz')
+        expect(translator.region).toEqual('XX')
+        expect(translator.locale.toString()).toEqual('zz-XX')
 
-      translator.language = 'qq' as any
-      translator.region = false as any
-      expect(translator.language).toEqual('qq')
-      expect(translator.region).toEqual(undefined)
-      expect(translator.locale.toString()).toEqual('qq')
+        translator.language = 'qq' as any
+        translator.region = false as any
+        expect(translator.language).toEqual('qq')
+        expect(translator.region).toEqual(undefined)
+        expect(translator.locale.toString()).toEqual('qq')
+      })
+      expect(warnings).toEqual([
+        '[Vue warn]: Unknown language code "xx"',
+        '[Vue warn]: Unknown region code "ZZ"',
+        '[Vue warn]: Unknown language code "zz"',
+        '[Vue warn]: Unknown region code "ZZ"',
+        '[Vue warn]: Unknown language code "zz"',
+        '[Vue warn]: Unknown region code "XX"',
+        '[Vue warn]: Unknown language code "qq"',
+        '[Vue warn]: Unknown region code "XX"',
+        '[Vue warn]: Unknown language code "qq"',
+      ])
     })
 
     it('should fail when translating an empty key', () => {
@@ -1013,8 +1038,13 @@ describe('I18N Plugin', () => {
     })
 
     it('should warn when translating a missing translation', () => {
-      const translator = makeTranslator({ defaultLanguage: 'en' })
-      expect(translator.t('flipper' as any)).toEqual('[flipper]')
+      const warnings = captureWarnings(() => {
+        const translator = makeTranslator({ defaultLanguage: 'en' })
+        expect(translator.t('flipper' as any)).toEqual('[flipper]')
+        // Repeated lookups use the cached fallback without warning again.
+        expect(translator.t('flipper' as any)).toEqual('[flipper]')
+      })
+      expect(warnings).toEqual(['[Vue warn]: Translation key "flipper" not found'])
     })
 
     it('should render missing keys literally in brackets for every plural form', () => {
@@ -1050,18 +1080,27 @@ describe('I18N Plugin', () => {
     })
 
     it('should warn when missing the default language', () => {
-      const translator = makeTranslator({ defaultLanguage: 'en' })
-      expect(translator.t({ de: 'flipper' } as any)).toEqual('')
+      const warnings = captureWarnings(() => {
+        const translator = makeTranslator({ defaultLanguage: 'en' })
+        expect(translator.t({ de: 'flipper' } as any)).toEqual('')
+      })
+      expect(warnings).toEqual(['[Vue warn]: Translation missing default language "en" in'])
     })
 
     it('should warn when the date time format is invalid', () => {
-      const translator = makeTranslator({ defaultLanguage: 'en' })
-      expect(translator.d(new Date(), 'bogus')).toBeA('string')
+      const warnings = captureWarnings(() => {
+        const translator = makeTranslator({ defaultLanguage: 'en' })
+        expect(translator.d(new Date(), 'bogus')).toBeA('string')
+      })
+      expect(warnings).toEqual(['[Vue warn]: DateTimeFormat alias "bogus" not found'])
     })
 
     it('should warn when the number format is invalid', () => {
-      const translator = makeTranslator({ defaultLanguage: 'en' })
-      expect(translator.n(1234.56, 'bogus')).toBeA('string')
+      const warnings = captureWarnings(() => {
+        const translator = makeTranslator({ defaultLanguage: 'en' })
+        expect(translator.n(1234.56, 'bogus')).toBeA('string')
+      })
+      expect(warnings).toEqual(['[Vue warn]: NumberFormat alias "bogus" not found'])
     })
   })
 

@@ -10,6 +10,81 @@ describe('Translator reactivity', () => {
   const amount = 1234.56
   const date = new Date('2026-01-02T12:00:00Z')
 
+  for (const update of ['ignored', 'invalid'] as const) {
+    it(`should not reevaluate consumers after ${update} translation updates`, () => {
+      const app = createApp({}).use(i18n, {
+        defaultLanguage: 'en',
+        translations: { hello: { en: 'Original', de: 'Original' } },
+      })
+      const translator = app.runWithContext(() => useTranslator())
+      let evaluations = 0
+      const state = computed(() => {
+        evaluations++
+        return { text: translator.t('hello'), available: translator.hasTranslation('cats') }
+      })
+      expect(state.value).toEqual({ text: 'Original', available: false })
+      expect(evaluations).toEqual(1)
+
+      if (update === 'ignored') {
+        translator.updateTranslations({})
+        translator.updateTranslations({ cats: undefined })
+        translator.updateTranslations({ hello: { en: '' }, cats: { en: '', de: undefined } })
+      } else {
+        expect(() =>
+          translator.updateTranslations({
+            hello: { en: 'Must not be applied' },
+            cats: { en: ['none', undefined, 'many'] },
+          }),
+        ).toThrowError(TypeError)
+      }
+      expect(state.value).toEqual({ text: 'Original', available: false })
+      expect(evaluations).toEqual(1)
+      expect(translator.hasTranslation('cats')).toEqual(false)
+
+      // A valid update must still notify consumers. It also clears cached
+      // templates, exposing any partial mutation from the rejected update.
+      translator.updateTranslations({ cats: { en: 'Cats' } })
+      expect(state.value).toEqual({ text: 'Original', available: true })
+      expect(evaluations).toEqual(2)
+    })
+  }
+
+  it('should isolate cached translations and reactive updates between translators', () => {
+    function makeTranslator(text: string): Translator {
+      const app = createApp({}).use(i18n, {
+        defaultLanguage: 'en',
+        translations: { hello: { en: text, de: text } },
+      })
+      return app.runWithContext(() => useTranslator())
+    }
+    const first = makeTranslator('First')
+    const second = makeTranslator('Second')
+    let firstEvaluations = 0
+    let secondEvaluations = 0
+    const firstState = computed(() => {
+      firstEvaluations++
+      return { text: first.t('hello'), available: first.hasTranslation('cats') }
+    })
+    const secondState = computed(() => {
+      secondEvaluations++
+      return { text: second.t('hello'), available: second.hasTranslation('cats') }
+    })
+    expect(firstState.value).toEqual({ text: 'First', available: false })
+    expect(secondState.value).toEqual({ text: 'Second', available: false })
+
+    first.updateTranslations({ hello: { en: 'First updated' }, cats: { en: 'Cats' } })
+    expect(firstState.value).toEqual({ text: 'First updated', available: true })
+    expect(secondState.value).toEqual({ text: 'Second', available: false })
+    expect(firstEvaluations).toEqual(2)
+    expect(secondEvaluations).toEqual(1)
+
+    second.updateTranslations({ hello: { en: 'Second updated' } })
+    expect(secondState.value).toEqual({ text: 'Second updated', available: false })
+    expect(firstState.value).toEqual({ text: 'First updated', available: true })
+    expect(firstEvaluations).toEqual(2)
+    expect(secondEvaluations).toEqual(2)
+  })
+
   it('should render a translation when a previously missing key is added', async () => {
     const dom = new JSDOM('<!doctype html><html><body><div id="app"></div></body></html>')
     let translator!: Translator
