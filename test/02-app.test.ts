@@ -1,119 +1,136 @@
-import { describe, expect, it } from 'vitest'
-import { createApp, nextTick } from 'vue'
+import { JSDOM } from 'jsdom'
+import { compile, createApp, defineComponent } from 'vue'
 
-import { i18n, useTranslator } from '../lib'
-import TestComponent from './test.vue'
+import { i18n, useTranslator } from '../lib/index.ts'
+import { createJSDomApp } from './jsdom-vue.ts'
+
+import type { I18nOptions } from '../lib/index.ts'
 
 describe('I18n Plugin with Vue Apps', () => {
   const date = new Date(1234567890123)
-
-  it('should initialize the plugin with options', () => {
-    const app = createApp({}).use(i18n, {
-      defaultLanguage: 'en',
-      dateTimeFormats: {
-        default: { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'UTC' },
-        date: { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' },
-        time: { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'UTC' },
+  const options = {
+    defaultLanguage: 'en',
+    dateTimeFormats: {
+      default: {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+        timeZone: 'UTC',
       },
-      numberFormats: {
-        default: { style: 'currency', currency: 'USD' },
+      date: { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' },
+      time: { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'UTC' },
+    },
+    numberFormats: {
+      default: { style: 'currency', currency: 'USD' },
+    },
+    translations: {
+      hello: {
+        'en': 'Hello, World!',
+        'de': 'Hallo, Welt!',
+        'de-DE': 'Hallo, Deutschland!',
+        'de-AT': 'Hallo, Österreich!',
       },
-      translations: {
-        hello: {
-          'en': 'Hello, World!',
-          'de': 'Hallo, Welt!',
-          'de-DE': 'Hallo, Deutschland!',
-          'de-AT': 'Hallo, Österreich!',
-        },
-        cats: {
-          en: ' no cats | one cat | {n} cats, {n}, really {n} ',
-          de: ' keine Katzen | eine Katze | {n} Katzen, {n}, wirklich {n} ',
-        },
+      cats: {
+        en: ' no cats | one cat | {n} cats, {n}, really {n} ',
+        de: ' keine Katzen | eine Katze | {n} Katzen, {n}, wirklich {n} ',
       },
-    })
+    },
+  } satisfies I18nOptions
 
-    app.runWithContext(function() {
-      const translator = useTranslator()
+  it('should create independent translators for each app', () => {
+    const first = createApp({}).use(i18n, options)
+    const second = createApp({}).use(i18n, options)
+    const translator = first.runWithContext(() => useTranslator())
+    const other = second.runWithContext(() => useTranslator())
 
-      translator.locale = new Intl.Locale('en-US')
-      expect(translator.t('hello')).toBe('Hello, World!')
-      expect(translator.tc('cats', 0)).toBe('no cats')
-      expect(translator.tc('cats', 1)).toBe('one cat')
-      expect(translator.tc('cats', 2)).toBe('$2.00 cats, $2.00, really $2.00')
-
-      expect(translator.d(date)).toBe('02/13/2009, 23:31:30')
-      expect(translator.d(date, 'date')).toBe('02/13/2009')
-      expect(translator.d(date, 'time')).toBe('23:31:30')
-      expect(translator.n(1234.56)).toBe('$1,234.56')
-
-      translator.locale = new Intl.Locale('de-DE')
-      expect(translator.t('hello')).toBe('Hallo, Deutschland!')
-      expect(translator.tc('cats', 0)).toBe('keine Katzen')
-      expect(translator.tc('cats', 1)).toBe('eine Katze')
-      expect(translator.tc('cats', 2)).toBe('2,00\xA0$ Katzen, 2,00\xA0$, wirklich 2,00\xA0$')
-
-      expect(translator.d(date)).toBe('13.02.2009, 23:31:30')
-      expect(translator.d(date, 'date')).toBe('13.02.2009')
-      expect(translator.d(date, 'time')).toBe('23:31:30')
-      expect(translator.n(1234.56)).toBe('1.234,56\xA0$')
-    })
+    expect(translator).not.toStrictlyEqual(other)
+    translator.language = 'de'
+    expect(translator.t('hello')).toEqual('Hallo, Welt!')
+    expect(other.language).toEqual('en')
+    expect(other.t('hello')).toEqual('Hello, World!')
   })
 
-  it('should use the $t, $d, $n, ... aliases in templates', async () => {
-    const app = createApp(TestComponent).use(i18n, {
-      defaultLanguage: 'en',
-      dateTimeFormats: {
-        default: { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'UTC' },
-        date: { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' },
-        time: { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'UTC' },
-      },
-      numberFormats: {
-        default: { style: 'currency', currency: 'USD' },
-      },
-      translations: {
-        hello: {
-          'en': 'Hello, World!',
-          'de': 'Hallo, Welt!',
-          'de-DE': 'Hallo, Deutschland!',
-          'de-AT': 'Hallo, Österreich!',
-        },
-        cats: {
-          en: ' no cats | one cat | {n} cats, {n}, really {n} ',
-          de: ' keine Katzen | eine Katze | {n} Katzen, {n}, wirklich {n} ',
-        },
-      },
+  it('should support extracted translator methods and utilities', () => {
+    const app = createApp({}).use(i18n, options)
+    const translator = app.runWithContext(() => useTranslator())
+    // oxlint-disable-next-line typescript/unbound-method - deliberately verify detached calls
+    const { t, tc, n, d, updateTranslations } = translator
+    // oxlint-disable-next-line typescript/unbound-method - deliberately verify detached calls
+    const { language, country, flag, updateTranslations: legacyUpdateTranslations } = translator.utils
+
+    expect(t('hello')).toEqual('Hello, World!')
+    expect(tc('cats', 2)).toEqual('$2.00 cats, $2.00, really $2.00')
+    expect(n(1234.56)).toEqual('$1,234.56')
+    expect(d(date, 'date')).toEqual('02/13/2009')
+    expect(language('de')).toEqual('German')
+    expect(country('DE')).toEqual('Germany')
+    expect(flag('DE')).toEqual('🇩🇪')
+
+    updateTranslations({ hello: { en: 'Updated' } })
+    expect(t('hello')).toEqual('Updated')
+    legacyUpdateTranslations({ hello: { en: 'Updated again' } })
+    expect(t('hello')).toEqual('Updated again')
+
+    translator.language = 'de'
+    expect(t('hello')).toEqual('Hallo, Welt!')
+    expect(language('de')).toEqual('Deutsch')
+  })
+
+  it('should use the $t, $tc, $d, and $n aliases in templates', () => {
+    const dom = new JSDOM('<!doctype html><html><body><div id="app"></div></body></html>')
+    const component = defineComponent({
+      setup: () => ({ date }),
+      render: compile(`<div>
+        <span>{{ $t('hello') }}</span>
+        <span>{{ $tc('cats', 0) }}</span>
+        <span>{{ $tc('cats', 1) }}</span>
+        <span>{{ $tc('cats', 2) }}</span>
+        <span>{{ $d(date) }}</span>
+        <span>{{ $d(date, 'date') }}</span>
+        <span>{{ $d(date, 'time') }}</span>
+        <span>{{ $n(1234.56) }}</span>
+      </div>`),
     })
+    const app = createJSDomApp(dom, component).use(i18n, options)
 
-    document.body.innerHTML = '<div id="app"></div>'
-    app.mount('#app')
-
-    await nextTick()
-
-    expect(document.querySelector('#t')?.innerHTML).toBe('Hello, World!')
-    expect(document.querySelector('#tc0')?.innerHTML).toBe('no cats')
-    expect(document.querySelector('#tc1')?.innerHTML).toBe('one cat')
-    expect(document.querySelector('#tc2')?.innerHTML).toBe('$2.00 cats, $2.00, really $2.00')
-    expect(document.querySelector('#d')?.innerHTML).toBe('02/13/2009, 23:31:30')
-    expect(document.querySelector('#ddate')?.innerHTML).toBe('02/13/2009')
-    expect(document.querySelector('#dtime')?.innerHTML).toBe('23:31:30')
-    expect(document.querySelector('#n')?.innerHTML).toBe('$1,234.56')
+    try {
+      app.mount('#app')
+      const contents = [...dom.window.document.querySelectorAll('span')].map((element) => element.textContent)
+      expect(contents).toEqual([
+        'Hello, World!',
+        'no cats',
+        'one cat',
+        '$2.00 cats, $2.00, really $2.00',
+        '02/13/2009, 23:31:30',
+        '02/13/2009',
+        '23:31:30',
+        '$1,234.56',
+      ])
+    } finally {
+      app.unmount()
+      dom.window.close()
+    }
   })
 
   it('should initialize the plugin with a language', () => {
     const app = createApp({}).use(i18n, 'en')
 
-    app.runWithContext(function() {
+    app.runWithContext(function () {
       const translator = useTranslator()
 
       translator.locale = new Intl.Locale('de-DE') // completely unknown
-      expect(translator.t({ en: 'Hello, World!', de: '' })).toBe('Hello, World!')
+      expect(translator.t({ en: 'Hello, World!', de: '' })).toEqual('Hello, World!')
     })
   })
 
   it('should fail when the plugin is not configured', () => {
     const app = createApp({})
 
-    app.runWithContext(function() {
+    app.runWithContext(function () {
       expect(() => useTranslator()).toThrowError('No translator found in the Vue app')
     })
   })

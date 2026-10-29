@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.options.json",
+  "compilerOptions": {
+    "lib": ["esnext", "dom"],
+    "types": ["@plugjs/expect5/globals"],
+    "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.test.tsbuildinfo"
+  },
+  "include": ["*.test.ts"]
+}

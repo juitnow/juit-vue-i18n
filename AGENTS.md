@@ -18,7 +18,7 @@ consumer application's own build and test commands when working there.
   on native `Intl` APIs, including `Intl.supportedValuesOf`; it provides no
   polyfills.
 - Import runtime APIs and types from `@juit/vue-i18n`. Do not import internal
-  `lib/` files or use `makeTranslator` in consumer code.
+  `lib/` files or instantiate the internal translator constructor in consumer code.
 - Register `app.use(i18n, options)` before mounting the app. `defaultLanguage`
   is required; provide a translation in its base language for each message.
 - Language selection is explicit. For browser preferences, use
@@ -39,8 +39,8 @@ const translations = {
 
 declare module '@juit/vue-i18n' {
   interface I18nConfiguration {
-    languages: 'en' | 'de',
-    translationKeys: keyof typeof translations,
+    languages: 'en' | 'de'
+    translationKeys: keyof typeof translations
   }
 }
 
@@ -75,29 +75,95 @@ dictionaries to the plugin. See [Configuring Types](README.md#configuring-types)
 - Prefer tuples when messages contain literal pipes. Use `as const satisfies
   Translations` to retain tuple and key inference. Parameters accept strings
   and numbers; translations produce plain strings, not Vue components.
-- For asynchronously loaded messages, use `utils.updateTranslations(...)`
-  rather than mutating the original dictionary. Updates are not reactive:
-  coordinate loading with application state so consumers evaluate translations
-  again after loading completes.
+- For asynchronously loaded messages, use `updateTranslations(...)`
+  rather than mutating the original dictionary. Updates invalidate computed
+  translations and schedule component renders; await `nextTick()` before
+  reading the updated DOM.
 - For server rendering, initialize a translator per app/request. Choose
   matching initial locales and explicit time zones on server and client when
   formatted output must agree.
 
-## Source map
+## Repository layout
 
+- `SKILL.md`: consumer integration guidance shipped in the npm package. Keep it
+  focused on using the public API; `AGENTS.md` is internal and excluded from npm.
 - `lib/index.ts`: public exports, configuration types, Vue plugin installation,
   `useTranslator()`, component global types, and `LanguageMatcher`.
 - `lib/translator.ts`: reactive locale state, translation parsing and caching,
-  number/date formatting, and translation updates. `makeTranslator` is an
-  internal factory; it is not a runtime export of the package entry point.
+  number/date formatting, and translation updates. The module exports the
+  `TranslatorImpl` constructor as `Translator` for internal use; the package
+  entry point exports only the `Translator` type. The class owns its message map, parsed cache, locale
+  and translation signal refs. Mark the instance raw: internal refs provide reactivity
+  and must not be unwrapped by a Vue proxy. Keep public methods callable
+  when extracted from the instance.
 - `lib/iso-639.ts`, `lib/iso-3166.ts`, `lib/iso-4217.ts`: reference types,
   frozen code arrays, and type guards.
-- `test/01-i18n.test.ts`: translator and reference-data runtime tests.
-- `test/02-app.test.ts` and `test/test.vue`: Vue integration tests.
+- `test/01-i18n.test.ts`: translator and reference-data runtime tests, creating
+  translators through the public plugin and a mounted component.
+- `test/02-app.test.ts`: Vue plugin, injection, and component global tests.
+- `test/jsdom-vue.ts`: custom Vue renderer backed by an explicit JSDOM document;
+  `createJSDomApp` supports element and selector mount targets.
 - `test/03-matcher.test.ts`: matcher runtime and type assertions.
-- `test/types/`: isolated compiler-only tests for default and augmented types.
+- `test/04-reactivity.test.ts`: locale and message updates in compiled templates
+  and computed values, reactive containers, and conditional static content.
+- `test/types/default/` and `test/types/configured/`: separate compiler-only
+  projects for default and augmented types.
 - `test/data/`: authoritative fixtures for this repository's country and
   language tables. See its README for provenance.
+- `build.ts`: PlugJS tasks for compilation, type checks, tests, coverage, and lint.
+- `tsconfig.options.json`: shared strict NodeNext compiler options;
+  `lib/tsconfig.json` emits ESM, declarations, and maps into `dist/`.
+- `test/tsconfig.json` and `test/types/*/tsconfig.json`: test type checks.
+- `oxlint.config.ts` and `oxfmt.config.ts`: lint and formatting configuration.
+
+## Development workflow
+
+The build uses PlugJS, `@plugjs/tsgo`, `@plugjs/expect5`, `@plugjs/cov8`,
+and `@plugjs/oxc`. Use the tasks in `build.ts`; the former Vitest, Vite,
+vue-tsc, and ESLint workflow no longer applies.
+
+| Command                                       | Purpose                                                                                 |
+| --------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `npm run build`                               | Compile sources, check test types, run tests with coverage, then lint and format-check. |
+| `npm run build transpile`                     | Clean `dist/` and emit JavaScript, declarations, and source maps.                       |
+| `npm run build types`                         | Check every TypeScript project under `test/`.                                           |
+| `npm run build test`                          | Run runtime tests without preparing a coverage report.                                  |
+| `npm run build coverage`                      | Run tests and prepare coverage, including when tests fail.                              |
+| `npm run build coverage reportUncovered=true` | Also print uncovered source line numbers.                                               |
+| `npm run build reportUncovered=true`          | Run the full workflow with uncovered line reporting.                                    |
+| `npm run build lint`                          | Check linting and formatting.                                                           |
+| `npm run build lint fix=true`                 | Apply lint and formatting fixes.                                                        |
+| `npm run dev`                                 | Watch `lib/` and `test/` and rerun the coverage task.                                   |
+
+Runtime tests import `../lib/index.ts` directly; PlugJS transpiles the source
+modules while running tests. Standalone test and coverage tasks, including
+watch mode, do not require `dist/` or a prior transpile task. Compiler-only
+fixtures retain package-name imports with paths pointing to the library source.
+Relative source imports use explicit `.ts` extensions, which the compiler
+rewrites in emitted JavaScript. Declarations are emitted per module; this build
+does not bundle them.
+
+Coverage requires 100% overall and per source file. Raw data lives in
+`.coverage-data/`; reports are written to `coverage/`. A coverage failure can
+follow passing tests, including when a suite is deliberately skipped. Read the
+uncovered line report before changing code or tests; do not lower thresholds
+or re-enable intentionally disabled tests merely to make a run pass. The full
+workflow stops on failure, so run lint separately if coverage blocks it.
+
+### Runtime tests and Vue context
+
+- The test runner supplies `describe`, `it`, `expect`, and `skip` through
+  `@plugjs/expect5`; match its assertion API, such as `toEqual`, `toBeA`, and
+  `toThrowError`.
+- For component tests, create a JSDOM instance and use `createJSDomApp` from
+  `test/jsdom-vue.ts`. Its renderer uses that document without installing DOM
+  objects on `globalThis`. A browser lint environment does not create runtime
+  browser globals.
+- Obtain translators through `app.use(i18n, options)` and `useTranslator()` in
+  component setup, or use `app.runWithContext` for synchronous injection tests.
+  Mounting an app does not activate component context in later test callbacks.
+- Unmount apps and close JSDOM windows during teardown when adding fixtures.
+  Use `nextTick()` before asserting results of reactive rendering changes.
 
 ## Intentional behavior
 
@@ -124,6 +190,12 @@ dictionaries to the plugin. See [Configuring Types](README.md#configuring-types)
 - A message is a string or a readonly tuple of one to three strings. One variant
   serves all counts; two mean singular/plural (zero uses plural); three mean
   zero/singular/plural. Only counts zero and one receive special treatment.
+- `translator.hasTranslation(key: string)` checks map membership independently
+  of locale and message contents, without warnings or fallback caching. It
+  tracks `_translationSignal` so added keys update reactive consumers. Accept
+  arbitrary strings even with configured key types; provide no template global.
+- Missing keys warn and render literally as `[key]` for all counts. Do not
+  parse missing keys as message syntax. Updates invalidate cached fallbacks.
 - `t()` delegates to `tc()` with count one. `params.n` overrides both the value
   inserted for `{n}` and the count used for variant selection.
 - Strings split at unescaped pipes. Tuples skip pipe splitting and pipe
@@ -140,9 +212,15 @@ dictionaries to the plugin. See [Configuring Types](README.md#configuring-types)
 - Parsed templates contain literal strings and `{ param: string }` tokens.
   Cache them independently of parameter values. Caches are scoped to the
   translator's translation map, current language/region, and message key.
+- `translator.updateTranslations(...)` is the primary update API; keep
+  `translator.utils.updateTranslations(...)` as a deprecated compatibility alias.
 - Updates are validated and copied before stored messages are changed. They
-  invalidate parsed caches but intentionally do not trigger Vue reactivity.
-  Locale changes are reactive.
+  invalidate parsed caches and replace a per-translator `_translationSignal`
+  ref value with a fresh object. Translation reads track this signal; updates
+  must only write it so a loading `watchEffect` does not subscribe itself to
+  translation changes.
+  Both message updates and locale changes are reactive. Ignored or invalid
+  updates do not notify consumers.
 - Preserve `Map` storage for messages and null-prototype format dictionaries:
   keys such as `constructor` and `__proto__` must not resolve inherited entries.
 
@@ -160,7 +238,7 @@ dictionaries to the plugin. See [Configuring Types](README.md#configuring-types)
   `Intl.supportedValuesOf('currency')`. The static currency union can differ;
   this is intentional. Do not replace runtime discovery with the static table.
 
-## Public types and verification
+## Public types and maintenance
 
 `I18nConfiguration` supports declaration merging for language, translation-key,
 date-format, and number-format unions. With a configured subset of languages,
@@ -170,18 +248,38 @@ accept arbitrary strings. Built-in format aliases remain available when custom
 aliases are configured. Translation updates accept partial messages.
 
 Keep configured and unconfigured type tests in separate TypeScript projects:
-declaration merging affects the entire project. Use `expectTypeOf` for inferred
-types and descriptive `@ts-expect-error` assertions for rejected inputs. Vitest
-alone does not enforce those compiler assertions.
-
-- `npm run check`: type-check source, runtime tests, Vue templates, and isolated
-  type fixtures; run Vitest with coverage; run ESLint.
-- `npm test`: runtime tests and coverage only.
-- `npm run build`: run all checks, then build ESM and bundled declarations into
-  `dist/`, with Vue externalized.
+declaration merging affects the entire project. Import `expectTypeOf` from
+`expect-type` for inferred types and use descriptive `@ts-expect-error`
+assertions for rejected inputs. Runtime test execution does not enforce these
+compiler assertions; run the `types` task or full build. Preserve the
+`string & {}` fallback in format alias types so arbitrary strings remain
+accepted while built-in literals remain available for autocomplete.
 
 Add focused regressions for behavioral fixes and public type changes. Prefer
-the full check before completing code changes; for comment-only edits, lint
-and verification that code/types are unchanged are sufficient. Do not edit
-generated `dist/` or `coverage/` files. Match the existing TypeScript style and
-keep README examples and source comments consistent with changed behavior.
+the full build before completing code changes; for documentation-only edits,
+run lint and verify that code/types are unchanged. Do not hand-edit generated
+`dist/`, `.coverage-data/`, or `coverage/` files. Match the existing TypeScript
+style and keep README examples and source comments consistent with changed
+behavior.
+
+Keep `AGENTS.md` and `SKILL.md` up to date automatically as code changes;
+no separate confirmation is needed. Review both with each change and update
+any affected guidance. `AGENTS.md` covers internal development; the distributed
+`SKILL.md` covers consumer integration. Keep public examples aligned with
+`README.md` and source comments.
+
+## Code style
+
+Prefer regular class and object methods and named `function` declarations.
+Do not use arrow-function class fields or assign standalone functions to
+variables unless required for typing or another concrete constraint. Inline
+callbacks may use arrows when useful for lexical `this` or concise iteration.
+When methods must support detached calls, declare regular methods and bind them
+in the constructor rather than defining functions as class properties.
+
+Keep class fields minimal: use constructor locals for values only needed during
+initialization, including values captured by constructor-created callbacks.
+Store a value on the instance only when methods need to access it later.
+
+Use TypeScript `private` members prefixed with `_` rather than JavaScript
+`#private` members.

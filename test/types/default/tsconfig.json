@@ -1,0 +1,11 @@
+{
+  "extends": "../../../tsconfig.options.json",
+  "compilerOptions": {
+    "lib": ["esnext", "dom"],
+    "paths": {
+      "@juit/vue-i18n": ["../../../lib/index.js"]
+    },
+    "tsBuildInfoFile": "../../../node_modules/.tmp/tsconfig.types.default.tsbuildinfo"
+  },
+  "include": ["*.ts"]
+}

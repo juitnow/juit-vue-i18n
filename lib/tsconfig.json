@@ -1,0 +1,17 @@
+{
+  "extends": "../tsconfig.options.json",
+  "compilerOptions": {
+    // Actually *emit* files from this project
+    "noEmit": false,
+    "outDir": "../dist",
+    // Generate declaration files alongside the emitted JavaScript
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    // Skip type checking of declaration (Vue wants the DOM)
+    "skipLibCheck": true,
+    // Store incremental build information in a separate directory
+    "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.lib.tsbuildinfo"
+  },
+  "include": ["**/*.ts"]
+}

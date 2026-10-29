@@ -1,25 +1,35 @@
-import { expectTypeOf } from 'vitest'
+import { expectTypeOf } from 'expect-type'
 
-import type { ComponentCustomProperties } from 'vue'
 import type {
-  DateTimeFormatAlias, DateTimeFormats, ISOCurrency, Language, NumberFormatAlias,
-  NumberFormats, Translation, TranslationKey, TranslationMessage, Translations, Translator, useTranslator,
-} from '../../lib'
+  DateTimeFormatAlias,
+  DateTimeFormats,
+  ISOCurrency,
+  Language,
+  NumberFormatAlias,
+  NumberFormats,
+  Translation,
+  TranslationKey,
+  TranslationMessage,
+  Translations,
+  Translator,
+  useTranslator,
+} from '@juit/vue-i18n'
+import type { ComponentCustomProperties } from 'vue'
 
 // This project is isolated from the default configuration and runtime tests.
 const translations = {
   hello: { en: 'Hello', de: 'Hallo' },
-  cats: { en: [ 'one cat', '{n} cats' ], de: [ 'eine Katze', '{n} Katzen' ] },
+  cats: { en: ['one cat', '{n} cats'], de: ['eine Katze', '{n} Katzen'] },
 } as const satisfies Translations
 const dateTimeFormats = { customDate: { year: 'numeric' } } as const satisfies DateTimeFormats
 const numberFormats = { speed: { style: 'unit', unit: 'meter-per-second' } } as const satisfies NumberFormats
 
-declare module '../../lib/index' {
+declare module '@juit/vue-i18n' {
   interface I18nConfiguration {
-    languages: 'en' | 'de',
-    translationKeys: keyof typeof translations,
-    dateTimeFormats: keyof typeof dateTimeFormats,
-    numberFormats: keyof typeof numberFormats,
+    languages: 'en' | 'de'
+    translationKeys: keyof typeof translations
+    dateTimeFormats: keyof typeof dateTimeFormats
+    numberFormats: keyof typeof numberFormats
   }
 }
 
@@ -27,9 +37,22 @@ expectTypeOf<Language>().toEqualTypeOf<'en' | 'de'>()
 expectTypeOf<TranslationKey>().toEqualTypeOf<'hello' | 'cats'>()
 expectTypeOf<NumberFormatAlias>().toEqualTypeOf<'speed' | 'default' | ISOCurrency>()
 expectTypeOf<DateTimeFormatAlias>().toEqualTypeOf<
-  'customDate' | 'default' | 'short' | 'medium' | 'long' | 'full'
-  | 'date' | 'shortDate' | 'mediumDate' | 'longDate' | 'fullDate'
-  | 'time' | 'shortTime' | 'mediumTime' | 'longTime' | 'fullTime'
+  | 'customDate'
+  | 'default'
+  | 'short'
+  | 'medium'
+  | 'long'
+  | 'full'
+  | 'date'
+  | 'shortDate'
+  | 'mediumDate'
+  | 'longDate'
+  | 'fullDate'
+  | 'time'
+  | 'shortTime'
+  | 'mediumTime'
+  | 'longTime'
+  | 'fullTime'
 >()
 expectTypeOf<Translation['en']>().toEqualTypeOf<TranslationMessage>()
 expectTypeOf<Translation['de-AT']>().toEqualTypeOf<TranslationMessage | undefined>()
@@ -46,8 +69,8 @@ expectTypeOf(translator.t('hello', { name: 'Alice', n: 2 })).toEqualTypeOf<strin
 expectTypeOf(translator.tc('cats', 2)).toEqualTypeOf<string>()
 translator.t(translations.hello)
 translator.tc(translations.cats, 2)
-translator.t({ 'en': [ 'Hello' ], 'de': 'Hallo', 'de-AT': [ 'Servus' ] })
-translator.utils.updateTranslations({ hello: { 'de-AT': [ 'Servus' ] }, cats: { en: 'cats' } })
+translator.t({ 'en': ['Hello'], 'de': 'Hallo', 'de-AT': ['Servus'] })
+translator.updateTranslations({ hello: { 'de-AT': ['Servus'] }, cats: { en: 'cats' } })
 translator.n(42, 'speed')
 translator.n(42, 'EUR')
 translator.n(42, 'default')
@@ -73,9 +96,9 @@ translator.t('missing')
 // @ts-expect-error Plural translations use the same configured keys.
 translator.tc('missing', 2)
 // @ts-expect-error Updates must use a configured key.
-translator.utils.updateTranslations({ missing: { en: 'Hello' } })
+translator.updateTranslations({ missing: { en: 'Hello' } })
 // @ts-expect-error Updates must use configured languages.
-translator.utils.updateTranslations({ hello: { fr: 'Bonjour' } })
+translator.updateTranslations({ hello: { fr: 'Bonjour' } })
 // @ts-expect-error Unknown custom number alias.
 translator.n(42, 'missing')
 // @ts-expect-error Unknown custom date alias.
@@ -91,3 +114,12 @@ component.$d(0, 'missing')
 declare const readonlyTranslation: Translation
 // @ts-expect-error Translation properties remain readonly.
 readonlyTranslation.en = 'Changed'
+
+expectTypeOf<Translator['utils']['updateTranslations']>().toEqualTypeOf<Translator['updateTranslations']>()
+
+// Key inspection accepts arbitrary strings, even with configured translation keys.
+declare const dynamicKey: string
+expectTypeOf(translator.hasTranslation(dynamicKey)).toEqualTypeOf<boolean>()
+translator.hasTranslation('unknown key')
+// @ts-expect-error Key inspection requires a string.
+translator.hasTranslation(42)
