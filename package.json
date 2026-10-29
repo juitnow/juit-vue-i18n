@@ -21,6 +21,7 @@
     "test": "test"
   },
   "files": [
+    "!AGENTS.md",
     "dist",
     "lib",
     "*.md"
