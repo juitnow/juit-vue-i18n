@@ -63,7 +63,7 @@ translator.t({ fr: 'Bonjour' })
 translator.t({ 'fr-FR': ['Bonjour'] })
 translator.t({ en: ['one', 'many'] as const })
 translator.t({ en: ['zero', 'one', 'many'] as const })
-translator.utils.updateTranslations({ anything: { fr: ['Bonjour'] } })
+translator.updateTranslations({ anything: { fr: ['Bonjour'] } })
 translator.n(42, 'any format')
 translator.d(0, 'any format')
 
@@ -82,3 +82,5 @@ translator.t('hello', { name: false })
 declare const readonlyTranslation: Translation
 // @ts-expect-error Message properties are readonly.
 readonlyTranslation.en = 'Changed'
+
+expectTypeOf<Translator['utils']['updateTranslations']>().toEqualTypeOf<Translator['updateTranslations']>()

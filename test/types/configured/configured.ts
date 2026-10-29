@@ -70,7 +70,7 @@ expectTypeOf(translator.tc('cats', 2)).toEqualTypeOf<string>()
 translator.t(translations.hello)
 translator.tc(translations.cats, 2)
 translator.t({ 'en': ['Hello'], 'de': 'Hallo', 'de-AT': ['Servus'] })
-translator.utils.updateTranslations({ hello: { 'de-AT': ['Servus'] }, cats: { en: 'cats' } })
+translator.updateTranslations({ hello: { 'de-AT': ['Servus'] }, cats: { en: 'cats' } })
 translator.n(42, 'speed')
 translator.n(42, 'EUR')
 translator.n(42, 'default')
@@ -96,9 +96,9 @@ translator.t('missing')
 // @ts-expect-error Plural translations use the same configured keys.
 translator.tc('missing', 2)
 // @ts-expect-error Updates must use a configured key.
-translator.utils.updateTranslations({ missing: { en: 'Hello' } })
+translator.updateTranslations({ missing: { en: 'Hello' } })
 // @ts-expect-error Updates must use configured languages.
-translator.utils.updateTranslations({ hello: { fr: 'Bonjour' } })
+translator.updateTranslations({ hello: { fr: 'Bonjour' } })
 // @ts-expect-error Unknown custom number alias.
 translator.n(42, 'missing')
 // @ts-expect-error Unknown custom date alias.
@@ -114,3 +114,5 @@ component.$d(0, 'missing')
 declare const readonlyTranslation: Translation
 // @ts-expect-error Translation properties remain readonly.
 readonlyTranslation.en = 'Changed'
+
+expectTypeOf<Translator['utils']['updateTranslations']>().toEqualTypeOf<Translator['updateTranslations']>()

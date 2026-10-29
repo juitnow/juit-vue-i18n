@@ -138,13 +138,13 @@ describe('I18N Plugin', () => {
     translator.locale = new Intl.Locale('de-DE')
     expect(translator.t('hello')).toEqual('Hello!')
 
-    translator.utils.updateTranslations({ hello: { 'en-US': 'Howdy!' } })
+    translator.updateTranslations({ hello: { 'en-US': 'Howdy!' } })
     expect(translator.t('hello')).toEqual('Howdy!')
 
-    translator.utils.updateTranslations({ hello: { de: 'Hallo!' } })
+    translator.updateTranslations({ hello: { de: 'Hallo!' } })
     expect(translator.t('hello')).toEqual('Hallo!')
 
-    translator.utils.updateTranslations({ hello: { 'de-DE': 'Guten Tag!' } })
+    translator.updateTranslations({ hello: { 'de-DE': 'Guten Tag!' } })
     expect(translator.t('hello')).toEqual('Guten Tag!')
   })
 
@@ -607,7 +607,7 @@ describe('I18N Plugin', () => {
     )
     expect(translator.t('hello')).toEqual('Hello {name}, write { example }')
 
-    translator.utils.updateTranslations({ hello: { en: 'Bye { name }' } })
+    translator.updateTranslations({ hello: { en: 'Bye { name }' } })
     expect(translator.t('hello', { name: 'Alice' })).toEqual('Bye Alice')
   })
 
@@ -765,7 +765,7 @@ describe('I18N Plugin', () => {
     expect(() =>
       makeTranslator({ defaultLanguage: 'en', translations: { hello: { en: invalid, de: '' } } }),
     ).toThrowError(TypeError)
-    expect(() => translator.utils.updateTranslations({ hello: { en: invalid } })).toThrowError(TypeError)
+    expect(() => translator.updateTranslations({ hello: { en: invalid } })).toThrowError(TypeError)
     expect(() => translator.t({ en: invalid, de: '' })).toThrowError(TypeError)
   })
 
@@ -783,14 +783,14 @@ describe('I18N Plugin', () => {
     })
     expect(translator.t('hello')).toEqual('original')
     expect(() =>
-      translator.utils.updateTranslations({
+      translator.updateTranslations({
         hello: { en: 'partial update' },
         cats: { en: ['none', undefined, 'many'] },
       }),
     ).toThrowError(TypeError)
 
     // Force the next lookup to read stored messages rather than the old cache.
-    translator.utils.updateTranslations({ cats: { en: 'cats' } })
+    translator.updateTranslations({ cats: { en: 'cats' } })
     expect(translator.t('hello')).toEqual('original')
   })
 
@@ -808,14 +808,14 @@ describe('I18N Plugin', () => {
     expect(translator.tc('hello', 1)).toEqual('one')
 
     const update: [string, string, string] = ['zero updated', 'one updated', 'many updated']
-    translator.utils.updateTranslations({ hello: { en: update } })
+    translator.updateTranslations({ hello: { en: update } })
     update.fill('mutated')
     translator.language = 'en'
     expect(translator.tc('hello', 0)).toEqual('zero updated')
     expect(translator.tc('hello', 1)).toEqual('one updated')
     expect(translator.tc('hello', 2)).toEqual('many updated')
 
-    translator.utils.updateTranslations({ hello: { de: 'cache invalidation' } })
+    translator.updateTranslations({ hello: { de: 'cache invalidation' } })
     expect(translator.tc('hello', 2)).toEqual('many updated')
   })
 
@@ -829,7 +829,7 @@ describe('I18N Plugin', () => {
     expect(translator.tc('hello', 2)).toEqual('viele')
     translator.region = 'DE'
     expect(translator.tc('hello', 2)).toEqual('many')
-    translator.utils.updateTranslations({ hello: { 'de-DE': ['eines', 'mehrere'] as const } })
+    translator.updateTranslations({ hello: { 'de-DE': ['eines', 'mehrere'] as const } })
     expect(translator.tc('hello', 2)).toEqual('mehrere')
   })
 
@@ -1084,7 +1084,7 @@ describe('I18N Plugin', () => {
       translator.language = 'de'
       expect(translator.t('hello')).toEqual('Hallo, Welt!')
 
-      translator.utils.updateTranslations({
+      translator.updateTranslations({
         hello: {
           en: 'Hello, Again!',
         },
@@ -1095,7 +1095,7 @@ describe('I18N Plugin', () => {
       translator.language = 'de'
       expect(translator.t('hello')).toEqual('Hallo, Welt!')
 
-      translator.utils.updateTranslations({
+      translator.updateTranslations({
         null: null,
         undefined: undefined,
         silly: { en: null },

@@ -1,3 +1,4 @@
+import { $gry, $ylw } from '@plugjs/plug'
 import { patchProp } from '@vue/runtime-dom'
 import { createRenderer } from 'vue'
 
@@ -64,6 +65,10 @@ export function createJSDomApp(
     } else {
       throw new Error(`Null element provided to mount`)
     }
+  }
+
+  app.config.warnHandler = (msg, _instance, trace) => {
+    log.warn(`${$gry('[')}${$ylw('vue')}${$gry(']')} ${msg} ${trace}`)
   }
 
   // Return the app instance
