@@ -83,7 +83,7 @@ dictionaries to the plugin. See [Configuring Types](README.md#configuring-types)
   matching initial locales and explicit time zones on server and client when
   formatted output must agree.
 
-## Source map
+## Repository layout
 
 - `lib/index.ts`: public exports, configuration types, Vue plugin installation,
   `useTranslator()`, component global types, and `LanguageMatcher`.
@@ -92,12 +92,69 @@ dictionaries to the plugin. See [Configuring Types](README.md#configuring-types)
   internal factory; it is not a runtime export of the package entry point.
 - `lib/iso-639.ts`, `lib/iso-3166.ts`, `lib/iso-4217.ts`: reference types,
   frozen code arrays, and type guards.
-- `test/01-i18n.test.ts`: translator and reference-data runtime tests.
-- `test/02-app.test.ts` and `test/test.vue`: Vue integration tests.
+- `test/01-i18n.test.ts`: translator and reference-data runtime tests, creating
+  translators through the public plugin and a mounted component.
+- `test/02-app.test.ts`: Vue plugin, injection, and component global tests.
+- `test/jsdom-vue.ts`: custom Vue renderer backed by an explicit JSDOM document;
+  `createJSDomApp` supports element and selector mount targets.
 - `test/03-matcher.test.ts`: matcher runtime and type assertions.
-- `test/types/`: isolated compiler-only tests for default and augmented types.
+- `test/types/default/` and `test/types/configured/`: separate compiler-only
+  projects for default and augmented types.
 - `test/data/`: authoritative fixtures for this repository's country and
   language tables. See its README for provenance.
+
+- `build.ts`: PlugJS tasks for compilation, type checks, tests, coverage, and lint.
+- `tsconfig.options.json`: shared strict NodeNext compiler options;
+  `lib/tsconfig.json` emits ESM, declarations, and maps into `dist/`.
+- `test/tsconfig.json` and `test/types/*/tsconfig.json`: test type checks.
+- `oxlint.config.ts` and `oxfmt.config.ts`: lint and formatting configuration.
+
+## Development workflow
+
+The build uses PlugJS, `@plugjs/tsgo`, `@plugjs/expect5`, `@plugjs/cov8`,
+and `@plugjs/oxc`. Use the tasks in `build.ts`; the former Vitest, Vite,
+vue-tsc, and ESLint workflow no longer applies.
+
+| Command                                       | Purpose                                                                                 |
+| --------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `npm run build`                               | Compile sources, check test types, run tests with coverage, then lint and format-check. |
+| `npm run build transpile`                     | Clean `dist/` and emit JavaScript, declarations, and source maps.                       |
+| `npm run build types`                         | Check every TypeScript project under `test/`.                                           |
+| `npm run build test`                          | Run runtime tests without preparing a coverage report.                                  |
+| `npm run build coverage`                      | Run tests and prepare coverage, including when tests fail.                              |
+| `npm run build coverage reportUncovered=true` | Also print uncovered source line numbers.                                               |
+| `npm run build reportUncovered=true`          | Run the full workflow with uncovered line reporting.                                    |
+| `npm run build lint`                          | Check linting and formatting.                                                           |
+| `npm run build lint fix=true`                 | Apply lint and formatting fixes.                                                        |
+| `npm run dev`                                 | Watch `lib/` and `test/` and rerun the coverage task.                                   |
+
+Runtime tests import `@juit/vue-i18n`, resolving the package's emitted entry
+point in `dist/`. Run the full build, or `transpile` before standalone test or
+coverage tasks, after changing library sources. Relative source imports use
+explicit `.ts` extensions, which the compiler rewrites in emitted JavaScript.
+Declarations are emitted per module; this build does not bundle them.
+
+Coverage requires 100% overall and per source file. Raw data lives in
+`.coverage-data/`; reports are written to `coverage/`. A coverage failure can
+follow passing tests, including when a suite is deliberately skipped. Read the
+uncovered line report before changing code or tests; do not lower thresholds
+or re-enable intentionally disabled tests merely to make a run pass. The full
+workflow stops on failure, so run lint separately if coverage blocks it.
+
+### Runtime tests and Vue context
+
+- The test runner supplies `describe`, `it`, `expect`, and `skip` through
+  `@plugjs/expect5`; match its assertion API, such as `toEqual`, `toBeA`, and
+  `toThrowError`.
+- For component tests, create a JSDOM instance and use `createJSDomApp` from
+  `test/jsdom-vue.ts`. Its renderer uses that document without installing DOM
+  objects on `globalThis`. A browser lint environment does not create runtime
+  browser globals.
+- Obtain translators through `app.use(i18n, options)` and `useTranslator()` in
+  component setup, or use `app.runWithContext` for synchronous injection tests.
+  Mounting an app does not activate component context in later test callbacks.
+- Unmount apps and close JSDOM windows during teardown when adding fixtures.
+  Use `nextTick()` before asserting results of reactive rendering changes.
 
 ## Intentional behavior
 
@@ -160,7 +217,7 @@ dictionaries to the plugin. See [Configuring Types](README.md#configuring-types)
   `Intl.supportedValuesOf('currency')`. The static currency union can differ;
   this is intentional. Do not replace runtime discovery with the static table.
 
-## Public types and verification
+## Public types and maintenance
 
 `I18nConfiguration` supports declaration merging for language, translation-key,
 date-format, and number-format unions. With a configured subset of languages,
@@ -170,18 +227,16 @@ accept arbitrary strings. Built-in format aliases remain available when custom
 aliases are configured. Translation updates accept partial messages.
 
 Keep configured and unconfigured type tests in separate TypeScript projects:
-declaration merging affects the entire project. Use `expectTypeOf` for inferred
-types and descriptive `@ts-expect-error` assertions for rejected inputs. Vitest
-alone does not enforce those compiler assertions.
-
-- `npm run check`: type-check source, runtime tests, Vue templates, and isolated
-  type fixtures; run Vitest with coverage; run ESLint.
-- `npm test`: runtime tests and coverage only.
-- `npm run build`: run all checks, then build ESM and bundled declarations into
-  `dist/`, with Vue externalized.
+declaration merging affects the entire project. Import `expectTypeOf` from
+`expect-type` for inferred types and use descriptive `@ts-expect-error`
+assertions for rejected inputs. Runtime test execution does not enforce these
+compiler assertions; run the `types` task or full build. Preserve the
+`string & {}` fallback in format alias types so arbitrary strings remain
+accepted while built-in literals remain available for autocomplete.
 
 Add focused regressions for behavioral fixes and public type changes. Prefer
-the full check before completing code changes; for comment-only edits, lint
-and verification that code/types are unchanged are sufficient. Do not edit
-generated `dist/` or `coverage/` files. Match the existing TypeScript style and
-keep README examples and source comments consistent with changed behavior.
+the full build before completing code changes; for documentation-only edits,
+run lint and verify that code/types are unchanged. Do not hand-edit generated
+`dist/`, `.coverage-data/`, or `coverage/` files. Match the existing TypeScript
+style and keep README examples and source comments consistent with changed
+behavior.
