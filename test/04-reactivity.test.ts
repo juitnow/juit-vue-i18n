@@ -10,6 +10,46 @@ describe('Translator reactivity', () => {
   const amount = 1234.56
   const date = new Date('2026-01-02T12:00:00Z')
 
+  it('should render a translation when a previously missing key is added', async () => {
+    const dom = new JSDOM('<!doctype html><html><body><div id="app"></div></body></html>')
+    let translator!: Translator
+    const warnings: string[] = []
+    const component = defineComponent({
+      setup() {
+        translator = useTranslator()
+        return {
+          translator,
+          available: computed(() => translator.hasTranslation('hello')),
+        }
+      },
+      render: compile(`<div>
+        <p v-if="translator.hasTranslation('hello')">{{ $t('hello') }}</p>
+        <p v-else>Loading translation</p>
+        <span>{{ available }}</span>
+      </div>`),
+    })
+    const app = createJSDomApp(dom, component).use(i18n, 'en')
+    app.config.warnHandler = (message) => {
+      warnings.push(message)
+    }
+    const document = dom.window.document
+
+    try {
+      app.mount('#app')
+      expect(document.querySelector('p')?.textContent).toEqual('Loading translation')
+      expect(document.querySelector('span')?.textContent).toEqual('false')
+
+      translator.updateTranslations({ hello: { en: 'Hello' } })
+      await nextTick()
+      expect(document.querySelector('p')?.textContent).toEqual('Hello')
+      expect(document.querySelector('span')?.textContent).toEqual('true')
+      expect(warnings).toEqual([])
+    } finally {
+      app.unmount()
+      dom.window.close()
+    }
+  })
+
   it('should not subscribe a translation-loading watchEffect to translation updates', async () => {
     const app = createApp({}).use(i18n, 'en')
     const translator = app.runWithContext(() => useTranslator())

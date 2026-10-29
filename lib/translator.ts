@@ -121,6 +121,13 @@ export interface Translator {
    */
   updateTranslations(translations: Partial<Record<TranslationKey, Partial<Translation>>>): void
 
+  /**
+   * Check whether a translation key is configured, regardless of locale or
+   * message content. Accepts any string and never warns for missing keys.
+   * Reactive consumers are updated when translations are added.
+   */
+  hasTranslation(key: string): boolean
+
   /** Extra internationalization utilities */
   utils: {
     /**
@@ -212,6 +219,7 @@ class TranslatorImpl implements Translator {
     this.n = this.n.bind(this)
     this.d = this.d.bind(this)
     this.updateTranslations = this.updateTranslations.bind(this)
+    this.hasTranslation = this.hasTranslation.bind(this)
 
     // Parse the configured default language, or use the supplied locale.
     const defaultLocale =
@@ -364,6 +372,11 @@ class TranslatorImpl implements Translator {
 
     // Format our date, optionally defaulting the time zone
     return new Intl.DateTimeFormat(this._locale.value, optionsWithTimeZone).format(date)
+  }
+
+  hasTranslation(key: string): boolean {
+    void this._translationSignal.value
+    return this._translations.has(key)
   }
 
   updateTranslations(updates: Partial<Record<TranslationKey, Partial<Translation>>>): void {

@@ -84,3 +84,10 @@ declare const readonlyTranslation: Translation
 readonlyTranslation.en = 'Changed'
 
 expectTypeOf<Translator['utils']['updateTranslations']>().toEqualTypeOf<Translator['updateTranslations']>()
+
+// Key inspection accepts arbitrary strings, even with configured translation keys.
+declare const dynamicKey: string
+expectTypeOf(translator.hasTranslation(dynamicKey)).toEqualTypeOf<boolean>()
+translator.hasTranslation('unknown key')
+// @ts-expect-error Key inspection requires a string.
+translator.hasTranslation(42)

@@ -76,6 +76,30 @@ describe('I18N Plugin', () => {
     expect(translator.locale.toString()).toEqual('en')
   })
 
+  it('should inspect configured keys independently of locale and message contents', () => {
+    const translator = makeTranslator({
+      defaultLanguage: 'en',
+      translations: {
+        hello: { en: 'Hello', de: 'Hallo' },
+        empty: { en: '', de: '' },
+        blank: { en: [''], de: [''] },
+        regional: { 'en': '', 'de': '', 'de-AT': 'Servus' },
+        ['__proto__']: { en: 'Prototype', de: 'Prototyp' },
+      },
+    })
+    // oxlint-disable-next-line typescript/unbound-method - verify detached calls
+    const { hasTranslation } = translator
+    for (const language of ['en', 'de', 'ja'] as const) {
+      translator.language = language
+      for (const key of ['hello', 'empty', 'blank', 'regional', '__proto__']) {
+        expect(hasTranslation(key)).toEqual(true)
+      }
+      for (const key of ['', 'missing', 'constructor', 'toString']) {
+        expect(hasTranslation(key)).toEqual(false)
+      }
+    }
+  })
+
   it('should translate a string in various languages', () => {
     expect(translator.t('hello')).toEqual('Hello, World!')
 

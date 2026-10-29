@@ -26,6 +26,7 @@ required translation languages and translation keys.
 - [Formatting numbers](#formatting-numbers)
 - [Formatting dates](#formatting-dates)
 - [Configuring Types](#configuring-types)
+- [Checking Translations](#checking-translations)
 - [Updating Translations](#updating-translations)
 - [Language Matching](#language-matching)
 - [Remarks](#remarks)
@@ -461,6 +462,23 @@ In the same way, if we pass any string other than `hello` to `t(...)` or
 
 Date, time, and number format alias types will also be augmented using the
 customizations specified in `dateTimeFormats` and `numberFormats`.
+
+## Checking Translations
+
+Use `translator.hasTranslation(key)` to check whether a key is configured.
+It accepts any string, including when translation keys are restricted through
+`I18nConfiguration`, and returns a boolean without warning about missing keys.
+
+The check is independent of the current locale and message contents: keys with
+empty messages also return `true`. It does not check whether a message can be
+resolved for the current locale. Calls in templates and computed values react
+when `updateTranslations(...)` adds a key.
+
+```typescript
+const available = computed(() => translator.hasTranslation('hello'))
+```
+
+The method is available on the translator; there is no template global alias.
 
 ## Updating Translations
 
