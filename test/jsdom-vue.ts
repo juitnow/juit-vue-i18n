@@ -3,7 +3,51 @@ import { patchProp } from '@vue/runtime-dom'
 import { createRenderer } from 'vue'
 
 import type { JSDOM } from 'jsdom'
-import type { App, Component, Renderer } from 'vue'
+import type { App, Component, ElementNamespace, Renderer } from 'vue'
+
+function insertStaticContent(
+  content: string,
+  parent: Element,
+  anchor: Node | null,
+  namespace: ElementNamespace,
+  start?: Node | null,
+  end?: Node | null,
+): [Node, Node] {
+  // <parent> before | first ... last | anchor </parent>
+  const before = anchor ? anchor.previousSibling : parent.lastChild
+  // #5308 can only take cached path if:
+  // - has a single root node
+  // - nextSibling info is still available
+  if (start && (start === end || start.nextSibling)) {
+    // cached
+    while (true) {
+      parent.insertBefore(start!.cloneNode(true), anchor)
+      if (start === end || !(start = start!.nextSibling)) break
+    }
+  } else {
+    const templateContainer = parent.ownerDocument.createElement('template')
+    // fresh insert
+    templateContainer.innerHTML =
+      namespace === 'svg' ? `<svg>${content}</svg>` : namespace === 'mathml' ? `<math>${content}</math>` : content
+
+    const template = templateContainer.content
+    if (namespace === 'svg' || namespace === 'mathml') {
+      // remove outer svg/math wrapper
+      const wrapper = template.firstChild!
+      while (wrapper.firstChild) {
+        template.appendChild(wrapper.firstChild)
+      }
+      template.removeChild(wrapper)
+    }
+    parent.insertBefore(template, anchor)
+  }
+  return [
+    // first
+    before ? before.nextSibling! : parent.firstChild!,
+    // last
+    anchor ? anchor.previousSibling! : parent.lastChild!,
+  ]
+}
 
 function createJSDomRenderer(dom: JSDOM): Renderer<Element> {
   const document = dom.window.document
@@ -41,6 +85,7 @@ function createJSDomRenderer(dom: JSDOM): Renderer<Element> {
     cloneNode: (node) => node.cloneNode(),
 
     // Straight from Vue's DOM Runtime
+    insertStaticContent: insertStaticContent,
     patchProp: patchProp,
   })
 }
