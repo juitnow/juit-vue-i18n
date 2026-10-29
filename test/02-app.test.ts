@@ -54,6 +54,32 @@ describe('I18n Plugin with Vue Apps', () => {
     expect(other.t('hello')).toEqual('Hello, World!')
   })
 
+  it('should support extracted translator methods and utilities', () => {
+    const app = createApp({}).use(i18n, options)
+    const translator = app.runWithContext(() => useTranslator())
+    // oxlint-disable-next-line typescript/unbound-method - deliberately verify detached calls
+    const { t, tc, n, d, updateTranslations } = translator
+    // oxlint-disable-next-line typescript/unbound-method - deliberately verify detached calls
+    const { language, country, flag, updateTranslations: legacyUpdateTranslations } = translator.utils
+
+    expect(t('hello')).toEqual('Hello, World!')
+    expect(tc('cats', 2)).toEqual('$2.00 cats, $2.00, really $2.00')
+    expect(n(1234.56)).toEqual('$1,234.56')
+    expect(d(date, 'date')).toEqual('02/13/2009')
+    expect(language('de')).toEqual('German')
+    expect(country('DE')).toEqual('Germany')
+    expect(flag('DE')).toEqual('🇩🇪')
+
+    updateTranslations({ hello: { en: 'Updated' } })
+    expect(t('hello')).toEqual('Updated')
+    legacyUpdateTranslations({ hello: { en: 'Updated again' } })
+    expect(t('hello')).toEqual('Updated again')
+
+    translator.language = 'de'
+    expect(t('hello')).toEqual('Hallo, Welt!')
+    expect(language('de')).toEqual('Deutsch')
+  })
+
   it('should use the $t, $tc, $d, and $n aliases in templates', () => {
     const dom = new JSDOM('<!doctype html><html><body><div id="app"></div></body></html>')
     const component = defineComponent({
