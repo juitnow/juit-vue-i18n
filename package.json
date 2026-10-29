@@ -38,10 +38,10 @@
     "dev": "plug -w lib -w test coverage"
   },
   "devDependencies": {
-    "@plugjs/cov8": "^0.7.14",
-    "@plugjs/expect5": "^0.7.14",
+    "@plugjs/cov8": "^0.7.15",
+    "@plugjs/expect5": "^0.7.15",
     "@plugjs/oxc": "^0.1.16",
-    "@plugjs/plug": "^0.7.14",
+    "@plugjs/plug": "^0.7.15",
     "@plugjs/tsgo": "^0.1.3",
     "@types/jsdom": "^30.0.0",
     "expect-type": "^1.4.0",
