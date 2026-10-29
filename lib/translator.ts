@@ -104,7 +104,7 @@ export interface Translator {
    * message content. Accepts any string and never warns for missing keys.
    * Reactive consumers are updated when translations are added.
    */
-  hasTranslation(key: string): boolean
+  hasTranslation(key: string): key is TranslationKey
 
   /** Locale display names, flags, and the deprecated update alias. */
   utils: {
@@ -342,7 +342,7 @@ class TranslatorImpl implements Translator {
     return new Intl.DateTimeFormat(this._locale.value, optionsWithTimeZone).format(date)
   }
 
-  hasTranslation(key: string): boolean {
+  hasTranslation(key: string): key is TranslationKey {
     void this._translationSignal.value
     return this._translations.has(key)
   }
