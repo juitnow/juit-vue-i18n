@@ -1,10 +1,10 @@
-import { i18n, useTranslator } from '@juit/vue-i18n'
 import { JSDOM } from 'jsdom'
 import { compile, createApp, defineComponent } from 'vue'
 
+import { i18n, useTranslator } from '../lib/index.ts'
 import { createJSDomApp } from './jsdom-vue.ts'
 
-import type { I18nOptions } from '@juit/vue-i18n'
+import type { I18nOptions } from '../lib/index.ts'
 
 describe('I18n Plugin with Vue Apps', () => {
   const date = new Date(1234567890123)
