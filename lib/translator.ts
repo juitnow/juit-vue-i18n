@@ -1,4 +1,4 @@
-import { computed, reactive, shallowRef, warn, watch } from 'vue'
+import { computed, shallowRef, warn } from 'vue'
 
 import { ISO_LANGUAGES } from './iso-639.ts'
 import { ISO_COUNTRIES } from './iso-3166.ts'
@@ -16,6 +16,7 @@ import type {
   TranslationMessage,
 } from './index.ts'
 import type { ISOLanguage } from './iso-639.ts'
+import type { ComputedRef, ShallowRef } from 'vue'
 
 /* ===== TRANSLATOR INTERFACE =============================================== */
 
@@ -146,6 +147,35 @@ export interface Translator {
 
 /* ===== TRANSLATOR IMPLEMENTATION ========================================== */
 
+/** Built-in date and time format aliases. */
+const DEFAULT_DATE_TIME_FORMATS = {
+  default: { dateStyle: 'medium', timeStyle: 'medium' },
+  short: { dateStyle: 'short', timeStyle: 'short' },
+  medium: { dateStyle: 'medium', timeStyle: 'medium' },
+  long: { dateStyle: 'long', timeStyle: 'long' },
+  full: { dateStyle: 'full', timeStyle: 'full' },
+
+  // Formats for dates only
+  date: { dateStyle: 'medium' },
+  shortDate: { dateStyle: 'short' },
+  mediumDate: { dateStyle: 'medium' },
+  longDate: { dateStyle: 'long' },
+  fullDate: { dateStyle: 'full' },
+
+  // Formats for times only
+  time: { timeStyle: 'medium' },
+  shortTime: { timeStyle: 'short' },
+  mediumTime: { timeStyle: 'medium' },
+  longTime: { timeStyle: 'long' },
+  fullTime: { timeStyle: 'full' },
+} as const satisfies DateTimeFormats
+
+/** Built-in number formats, using the currency codes supported by the runtime. */
+const DEFAULT_NUMBER_FORMATS = {
+  ...Object.fromEntries(ISO_CURRENCIES.map((currency) => [currency, { style: 'currency', currency }])),
+  default: {},
+} as const satisfies NumberFormats
+
 function checkLocale(locale: Intl.Locale): void {
   if (!ISO_LANGUAGES.includes(locale.language as any)) {
     warn(`Unknown language code "${locale.language}"`)
@@ -158,209 +188,225 @@ function checkLocale(locale: Intl.Locale): void {
   }
 }
 
-/** Create a _reactive_ translator object from the given options */
+/** Create a translator whose locale and message revisions are reactive. */
 export function makeTranslator(options: I18nOptions): Translator {
-  // Parse the configured default language, or use the supplied locale.
-  const defaultLocale: Intl.Locale =
-    typeof options.defaultLanguage === 'string' ? new Intl.Locale(options.defaultLanguage) : options.defaultLanguage
+  return new TranslatorImpl(options)
+}
 
-  // Retain only the default language and optional region.
-  const defaultLanguage = defaultLocale.region
-    ? `${defaultLocale.language}-${defaultLocale.region}`
-    : defaultLocale.language
+/** Internal translator state and behavior, isolated for each app. */
+class TranslatorImpl implements Translator {
+  readonly #defaultTimeZone: string | undefined
+  readonly #translations: InternalTranslations
+  readonly #dateTimeFormats: DateTimeFormats
+  readonly #numberFormats: NumberFormats
+  readonly #locale: ShallowRef<Intl.Locale>
+  readonly #languages: ComputedRef<LanguageKeys>
+  readonly #revision = shallowRef(0)
+  // Parsed templates, keyed by current language/region and then message key.
+  readonly #cache = new Map<string, Map<string, TranslationTemplate>>()
 
-  // Default time zone
-  const defaultTimeZone = options.defaultTimeZone
+  readonly utils: Translator['utils']
 
-  // Snapshot the translations, including copies of message tuples.
-  const revision = shallowRef(0)
-  const translations: InternalTranslations = new Map()
-  Object.entries(options.translations ?? {}).forEach(([key, value]) => {
-    translations.set(key, copyTranslation(value))
-  })
+  constructor(options: I18nOptions) {
+    // Preserve detached calls while declaring behavior as prototype methods.
+    this.t = this.t.bind(this)
+    this.tc = this.tc.bind(this)
+    this.n = this.n.bind(this)
+    this.d = this.d.bind(this)
+    this.updateTranslations = this.updateTranslations.bind(this)
+    this.utils = {
+      language: this.#languageName.bind(this),
+      country: this.#countryName.bind(this),
+      flag: this.#flag.bind(this),
+      updateTranslations: this.updateTranslations.bind(this),
+    }
 
-  // Use a null prototype so inherited properties cannot resolve as format aliases.
-  const dateTimeFormats: DateTimeFormats = Object.assign(Object.create(null), {
-    default: { dateStyle: 'medium', timeStyle: 'medium' },
-    short: { dateStyle: 'short', timeStyle: 'short' },
-    medium: { dateStyle: 'medium', timeStyle: 'medium' },
-    long: { dateStyle: 'long', timeStyle: 'long' },
-    full: { dateStyle: 'full', timeStyle: 'full' },
+    // Parse the configured default language, or use the supplied locale.
+    const defaultLocale =
+      typeof options.defaultLanguage === 'string' ? new Intl.Locale(options.defaultLanguage) : options.defaultLanguage
 
-    // Formats for dates only
-    date: { dateStyle: 'medium' },
-    shortDate: { dateStyle: 'short' },
-    mediumDate: { dateStyle: 'medium' },
-    longDate: { dateStyle: 'long' },
-    fullDate: { dateStyle: 'full' },
+    // Retain only the default language and optional region.
+    const defaultLanguage = defaultLocale.region
+      ? `${defaultLocale.language}-${defaultLocale.region}`
+      : defaultLocale.language
 
-    // Formats for times only
-    time: { timeStyle: 'medium' },
-    shortTime: { timeStyle: 'short' },
-    mediumTime: { timeStyle: 'medium' },
-    longTime: { timeStyle: 'long' },
-    fullTime: { timeStyle: 'full' },
+    // Default time zone
+    this.#defaultTimeZone = options.defaultTimeZone
 
-    // overrides and custom formats
-    ...options.dateTimeFormats,
-  })
+    // Snapshot the translations, including copies of message tuples.
+    this.#translations = new Map()
+    Object.entries(options.translations ?? {}).forEach(([key, value]) => {
+      this.#translations.set(key, copyTranslation(value))
+    })
 
-  // Use a null prototype so inherited properties cannot resolve as format aliases.
-  const numberFormats: NumberFormats = Object.assign(Object.create(null), {
-    // Create currency aliases for the codes reported by the runtime.
-    ...ISO_CURRENCIES.reduce(
-      (formats, currency) => {
-        formats[currency] = { style: 'currency', currency }
-        return formats
-      },
-      {} as Record<string, Intl.NumberFormatOptions>,
-    ),
-    // Add the default number format
-    default: {},
-    // Overrides and custom formats
-    ...options.numberFormats,
-  })
+    // Use null prototypes so inherited properties cannot resolve as format aliases.
+    this.#dateTimeFormats = Object.assign(Object.create(null), DEFAULT_DATE_TIME_FORMATS, options.dateTimeFormats)
+    this.#numberFormats = Object.assign(Object.create(null), DEFAULT_NUMBER_FORMATS, options.numberFormats)
 
-  // Initialize the current locale from the configured default.
-  const locale = shallowRef(new Intl.Locale(defaultLanguage))
-  watch(locale, checkLocale, { immediate: true })
+    // Initialize the current locale from the configured default.
+    this.#locale = shallowRef(new Intl.Locale(defaultLanguage))
+    checkLocale(this.#locale.value)
 
-  // Try the current regional variant and base language, then the default equivalents.
-  const languages = computed(() => {
-    const { language, region } = locale.value
-    const order: string[] = [language]
-    if (region) order.unshift(`${language}-${region}`)
-    if (language !== defaultLanguage) order.push(defaultLanguage)
-    if (!order.includes(defaultLocale.language)) order.push(defaultLocale.language)
-    return order as any as LanguageKeys
-  })
+    // Try the current regional variant and base language, then the default equivalents.
+    this.#languages = computed(() => {
+      const { language, region } = this.#locale.value
+      const order: string[] = [language]
+      if (region) order.unshift(`${language}-${region}`)
+      if (language !== defaultLanguage) order.push(defaultLanguage)
+      if (!order.includes(defaultLocale.language)) order.push(defaultLocale.language)
+      return order as any as LanguageKeys
+    })
+  }
 
-  // Build the translator object; its accessors read and write the locale ref.
-  const translator = {
-    get locale() {
-      return locale.value
-    },
+  get locale(): Readonly<Intl.Locale> {
+    return this.#locale.value
+  }
 
-    set locale(value: Intl.Locale) {
-      locale.value = new Intl.Locale(value.language, { region: value.region })
-    },
+  set locale(value: Intl.Locale) {
+    const locale = new Intl.Locale(value.language, { region: value.region })
+    checkLocale(locale)
+    this.#locale.value = locale
+  }
 
-    get language(): ISOLanguage {
-      return translator.locale.language as ISOLanguage
-    },
+  get language(): ISOLanguage {
+    return this.locale.language as ISOLanguage
+  }
 
-    set language(value: ISOLanguage) {
-      translator.locale = new Intl.Locale(value, { region: translator.region })
-    },
+  set language(value: ISOLanguage) {
+    this.locale = new Intl.Locale(value, { region: this.region })
+  }
 
-    get region(): ISOCountry | undefined {
-      return translator.locale.region as ISOCountry
-    },
+  get region(): ISOCountry | undefined {
+    return this.locale.region as ISOCountry
+  }
 
-    set region(value: ISOCountry | undefined) {
-      translator.locale = new Intl.Locale(translator.language, { region: value || undefined })
-    },
+  set region(value: ISOCountry | undefined) {
+    this.locale = new Intl.Locale(this.language, { region: value || undefined })
+  }
 
-    n(value?: number | bigint | null, format: string | Intl.NumberFormatOptions = 'default'): string {
-      if (value == null) return '' // null or undefined produces an empty string
+  n(value?: number | bigint | null, format: string | Intl.NumberFormatOptions = 'default'): string {
+    if (value == null) return '' // null or undefined produces an empty string
 
-      let options: Intl.NumberFormatOptions | undefined
-      if (typeof format === 'string') {
-        options = numberFormats[format]
-        if (!options) warn(`NumberFormat alias "${format}" not found`)
-      } else options = format
+    let options: Intl.NumberFormatOptions | undefined
+    if (typeof format === 'string') {
+      options = this.#numberFormats[format]
+      if (!options) warn(`NumberFormat alias "${format}" not found`)
+    } else options = format
 
-      return new Intl.NumberFormat(translator.locale, options).format(value)
-    },
+    return new Intl.NumberFormat(this.locale, options).format(value)
+  }
 
-    t(translation: TranslationKey | Translation, params?: TranslationParams): string {
-      return translator.tc(translation, 1, params)
-    },
+  t(translation: TranslationKey | Translation, params?: TranslationParams): string {
+    return this.tc(translation, 1, params)
+  }
 
-    tc(translation: TranslationKey | Translation, n: number, params?: TranslationParams): string {
-      // Track message updates in component renders and computed translations.
-      void revision.value
-      const template = getTemplate(translations, translation, languages.value)
-      const format = new Intl.NumberFormat(translator.locale, numberFormats['default'])
-      return replaceParams(template, { n, ...params }, format)
-    },
+  tc(translation: TranslationKey | Translation, n: number, params?: TranslationParams): string {
+    // Track message updates in component renders and computed translations.
+    void this.#revision.value
+    const template = this.#getTemplate(translation, this.#languages.value)
+    const format = new Intl.NumberFormat(this.locale, this.#numberFormats['default'])
+    return replaceParams(template, { n, ...params }, format)
+  }
 
-    d(
-      input?: DateInput,
-      format: DateTimeFormatAlias | Intl.DateTimeFormatOptions = 'default',
-      timeZone?: string,
-    ): string {
-      if (input == null || input === '') return ''
+  d(
+    input?: DateInput,
+    format: DateTimeFormatAlias | Intl.DateTimeFormatOptions = 'default',
+    timeZone?: string,
+  ): string {
+    if (input == null || input === '') return ''
 
-      const date = input instanceof Date ? input : new Date(input)
+    const date = input instanceof Date ? input : new Date(input)
 
-      let options: Intl.DateTimeFormatOptions | undefined
-      if (typeof format === 'string') {
-        options = dateTimeFormats[format]
-        if (!options) warn(`DateTimeFormat alias "${format}" not found`)
-      } else options = format
+    let options: Intl.DateTimeFormatOptions | undefined
+    if (typeof format === 'string') {
+      options = this.#dateTimeFormats[format]
+      if (!options) warn(`DateTimeFormat alias "${format}" not found`)
+    } else options = format
 
-      // Prefer the explicit time zone, then the format's zone, then the default.
-      timeZone = timeZone ?? options?.timeZone ?? defaultTimeZone
+    // Prefer the explicit time zone, then the format's zone, then the default.
+    timeZone = timeZone ?? options?.timeZone ?? this.#defaultTimeZone
 
-      // Preserve inherited and non-enumerable getters that spreading would lose.
-      // Define our own timeZone to override readonly properties without modifying the caller.
-      const optionsWithTimeZone = Object.create(options ?? null, {
-        timeZone: { value: timeZone, enumerable: true },
-      }) as Intl.DateTimeFormatOptions
+    // Preserve inherited and non-enumerable getters that spreading would lose.
+    // Define our own timeZone to override readonly properties without modifying the caller.
+    const optionsWithTimeZone = Object.create(options ?? null, {
+      timeZone: { value: timeZone, enumerable: true },
+    }) as Intl.DateTimeFormatOptions
 
-      // Format our date, optionally defaulting the time zone
-      return new Intl.DateTimeFormat(locale.value, optionsWithTimeZone).format(date)
-    },
+    // Format our date, optionally defaulting the time zone
+    return new Intl.DateTimeFormat(this.#locale.value, optionsWithTimeZone).format(date)
+  }
 
-    updateTranslations(updates: Partial<Record<TranslationKey, Partial<Translation>>>): void {
-      // Validate and copy all inputs before changing stored messages or their cache.
-      const copiedUpdates = Object.entries(updates).map(
-        ([key, translation]) => [key, copyTranslation(translation)] as const,
-      )
-      let updated = false
+  updateTranslations(updates: Partial<Record<TranslationKey, Partial<Translation>>>): void {
+    // Validate and copy all inputs before changing stored messages or their cache.
+    const copiedUpdates = Object.entries(updates).map(
+      ([key, translation]) => [key, copyTranslation(translation)] as const,
+    )
+    let updated = false
 
-      for (const [key, translation] of copiedUpdates) {
-        for (const [lang, value] of translation) {
-          if (!value) continue
+    for (const [key, translation] of copiedUpdates) {
+      for (const [lang, value] of translation) {
+        if (!value) continue
 
-          let translation = translations.get(key)
-          if (!translation) translation = new Map()
-          translation.set(lang, value)
-          translations.set(key, translation)
-          updated = true
+        let translation = this.#translations.get(key)
+        if (!translation) translation = new Map()
+        translation.set(lang, value)
+        this.#translations.set(key, translation)
+        updated = true
+      }
+    }
+
+    // Invalidate templates before notifying reactive consumers.
+    if (updated) {
+      this.#cache.clear()
+      this.#revision.value++
+    }
+  }
+
+  #languageName(code: ISOLanguage): string {
+    return new Intl.DisplayNames(this.locale, { type: 'language' }).of(code)!
+  }
+
+  #countryName(code: ISOCountry | 'EU' | 'UN'): string {
+    return new Intl.DisplayNames(this.locale, { type: 'region' }).of(code)!
+  }
+
+  #flag(code: ISOCountry | 'EU' | 'UN'): string {
+    return [...code] // oxlint-disable-line typescript/no-misused-spread
+      .map((c) => c.codePointAt(0)!)
+      .map((n) => 0x1f1a5 + n)
+      .map((n) => String.fromCodePoint(n))
+      .join('')
+  }
+
+  #getTemplate(translation: TranslationKey | Translation, languages: LanguageKeys): TranslationTemplate {
+    if (!translation) throw new Error('No translation key specified')
+
+    if (typeof translation === 'string') {
+      // Get the cache for the current language and optional region.
+      let languageCache = this.#cache.get(languages[0])
+      if (!languageCache) this.#cache.set(languages[0], (languageCache = new Map()))
+
+      // Get the translation from the cache or parse it
+      let template = languageCache.get(translation)
+      if (!template) {
+        let object = this.#translations.get(translation)
+        if (!object) {
+          warn(`Translation key "${translation}" not found`)
+          object = new Map()
+          object.set(languages[languages.length - 1]!, translation)
         }
+        template = extractTemplate(object, languages)
+
+        languageCache.set(translation, template)
       }
 
-      // Invalidate templates before notifying reactive consumers.
-      if (updated) {
-        caches.delete(translations)
-        revision.value++
-      }
-    },
-
-    utils: {
-      language(code: ISOLanguage): string {
-        return new Intl.DisplayNames(translator.locale, { type: 'language' }).of(code)!
-      },
-      country(code: ISOCountry | 'EU' | 'UN'): string {
-        return new Intl.DisplayNames(translator.locale, { type: 'region' }).of(code)!
-      },
-      flag(code: ISOCountry | 'EU' | 'UN'): string {
-        return [...code] // oxlint-disable-line typescript/no-misused-spread
-          .map((c) => c.codePointAt(0)!)
-          .map((n) => 0x1f1a5 + n)
-          .map((n) => String.fromCodePoint(n))
-          .join('')
-      },
-      updateTranslations(updates: Partial<Record<TranslationKey, Partial<Translation>>>): void {
-        translator.updateTranslations(updates)
-      },
-    },
-  } as const satisfies Translator
-
-  // Return a reactive version of the translator
-  return reactive(translator)
+      return template
+    } else {
+      // Snapshot inline messages, including tuples, without caching the result.
+      const map = copyTranslation(translation)
+      return extractTemplate(map, languages)
+    }
+  }
 }
 
 /* ===== TRANSLATION UTILITIES ============================================== */
@@ -394,56 +440,6 @@ function copyTranslation(translation: Partial<Translation> | undefined): Interna
   return new Map(
     Object.entries(translation ?? {}).map(([language, message]) => [language, copyMessage(message)] as const),
   )
-}
-
-/**
- * Cached parsed translation templates.
- *
- * The keys are:
- *
- * 1. The translations instance (WeakMap key)
- * 2. The current language and optional region (first entry in the fallback order)
- * 3. The translation key
- */
-const caches = new WeakMap<InternalTranslations, Map<string, Map<string, TranslationTemplate>>>()
-
-/** Get the `TranslationTemplate` for the translation or translation key. */
-function getTemplate(
-  translations: InternalTranslations,
-  translation: TranslationKey | Translation,
-  languages: LanguageKeys,
-): TranslationTemplate {
-  if (!translation) throw new Error('No translation key specified')
-
-  if (typeof translation === 'string') {
-    // Get the cache for the messages instance
-    let cache = caches.get(translations)
-    if (!cache) caches.set(translations, (cache = new Map()))
-
-    // Get the cache for the current language and optional region.
-    let languageCache = cache.get(languages[0])
-    if (!languageCache) cache.set(languages[0], (languageCache = new Map()))
-
-    // Get the translation from the cache or parse it
-    let template = languageCache.get(translation)
-    if (!template) {
-      let object = translations.get(translation)
-      if (!object) {
-        warn(`Translation key "${translation}" not found`)
-        object = new Map()
-        object.set(languages[languages.length - 1]!, translation)
-      }
-      template = extractTemplate(object, languages)
-
-      languageCache.set(translation, template)
-    }
-
-    return template
-  } else {
-    // Snapshot inline messages, including tuples, without caching the result.
-    const map = copyTranslation(translation)
-    return extractTemplate(map, languages)
-  }
 }
 
 /**
