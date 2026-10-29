@@ -111,6 +111,14 @@ export interface Translator {
    */
   d(date?: DateInput, format?: DateTimeFormatAlias | Intl.DateTimeFormatOptions, timeZone?: string): string
 
+  /**
+   * Merge translations and clear cached templates. Empty strings and
+   * undefined values are ignored; use a tuple containing an empty string
+   * for an intentionally blank message. Tuples are copied before storing.
+   * Updates invalidate computed translations and schedule component renders.
+   */
+  updateTranslations(translations: Partial<Record<TranslationKey, Partial<Translation>>>): void
+
   /** Extra internationalization utilities */
   utils: {
     /**
@@ -131,13 +139,8 @@ export interface Translator {
      */
     flag(code: ISOCountry | 'EU' | 'UN'): string
 
-    /**
-     * Merge translations and clear cached templates. Empty strings and
-     * undefined values are ignored; use a tuple containing an empty string
-     * for an intentionally blank message. Tuples are copied before storing.
-     * Updates invalidate computed translations and schedule component renders.
-     */
-    updateTranslations(translations: Partial<Record<TranslationKey, Partial<Translation>>>): void
+    /** @deprecated Use `translator.updateTranslations(...)` instead. */
+    updateTranslations: Translator['updateTranslations']
   }
 }
 
@@ -310,6 +313,32 @@ export function makeTranslator(options: I18nOptions): Translator {
       return new Intl.DateTimeFormat(locale.value, optionsWithTimeZone).format(date)
     },
 
+    updateTranslations(updates: Partial<Record<TranslationKey, Partial<Translation>>>): void {
+      // Validate and copy all inputs before changing stored messages or their cache.
+      const copiedUpdates = Object.entries(updates).map(
+        ([key, translation]) => [key, copyTranslation(translation)] as const,
+      )
+      let updated = false
+
+      for (const [key, translation] of copiedUpdates) {
+        for (const [lang, value] of translation) {
+          if (!value) continue
+
+          let translation = translations.get(key)
+          if (!translation) translation = new Map()
+          translation.set(lang, value)
+          translations.set(key, translation)
+          updated = true
+        }
+      }
+
+      // Invalidate templates before notifying reactive consumers.
+      if (updated) {
+        caches.delete(translations)
+        revision.value++
+      }
+    },
+
     utils: {
       language(code: ISOLanguage): string {
         return new Intl.DisplayNames(translator.locale, { type: 'language' }).of(code)!
@@ -325,29 +354,7 @@ export function makeTranslator(options: I18nOptions): Translator {
           .join('')
       },
       updateTranslations(updates: Partial<Record<TranslationKey, Partial<Translation>>>): void {
-        // Validate and copy all inputs before changing stored messages or their cache.
-        const copiedUpdates = Object.entries(updates).map(
-          ([key, translation]) => [key, copyTranslation(translation)] as const,
-        )
-        let updated = false
-
-        for (const [key, translation] of copiedUpdates) {
-          for (const [lang, value] of translation) {
-            if (!value) continue
-
-            let translation = translations.get(key)
-            if (!translation) translation = new Map()
-            translation.set(lang, value)
-            translations.set(key, translation)
-            updated = true
-          }
-        }
-
-        // Invalidate templates before notifying reactive consumers.
-        if (updated) {
-          caches.delete(translations)
-          revision.value++
-        }
+        translator.updateTranslations(updates)
       },
     },
   } as const satisfies Translator
