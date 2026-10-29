@@ -21,14 +21,8 @@ import type { ComputedRef, ShallowRef } from 'vue'
 /* ===== TRANSLATOR INTERFACE =============================================== */
 
 /**
- * Parameters for the formatting of a translation.
- *
- * This type is used to pass parameters to the `t` and `tc` methods of the
- * translator, allowing for the interpolation of values into the translated
- * message.
- *
- * Numeric values use the current locale and the `default` number format
- * before being interpolated into the message.
+ * Placeholder values for `t` and `tc`.
+ * Numbers use the current locale and the default number format.
  */
 export interface TranslationParams {
   [key: string]: string | number
@@ -37,79 +31,63 @@ export interface TranslationParams {
 /**
  * Accepted inputs for date and time formatting.
  *
- * A non-empty string or a number is passed to the `Date` constructor before
- * formatting. Numbers represent milliseconds since the Unix epoch.
- *
- * A `null`, `undefined`, or empty string input produces an empty string.
+ * Strings and numbers are passed to the `Date` constructor. Numbers are
+ * milliseconds since the Unix epoch. Null, undefined, and empty strings
+ * produce an empty string.
  */
 export type DateInput = Date | string | number | null | undefined
 
 /**
- * The translator interface for the application.
- *
- * This interface provides methods to translate messages, format numbers, and
- * format dates and times.
- *
- * Configured instances can be accessed using the `useTranslator()` composition
- * function, which will provide an instance of the translator.
+ * Reactive locale state, translations, and number/date formatting.
+ * Retrieve the app's translator with `useTranslator()`.
  */
-// oxlint-disable-next-line no-redeclare - redeclared as exported class
+// oxlint-disable-next-line no-redeclare - interface and constructor share a name
 export interface Translator {
-  /** The current ISO-639-1 language code used by this translator. */
+  /** Current ISO 639-1 language code. */
   language: ISOLanguage
-  /** The region (if any) used by this translator to localize translations. */
+  /** Current region; assigning undefined removes it. */
   region: ISOCountry | undefined
   /** The current locale. Assignments retain only the language and region. */
   locale: Readonly<Intl.Locale>
 
   /**
-   * Return the (possibly parameterized) translation for the specified message
-   * in the current language.
-   *
-   * Delegates to `tc(...)` with `n=1`. A supplied `params.n` overrides this
-   * count, including for plural selection.
+   * Translate a key or inline message using the current locale and fallbacks.
+   * Delegates to `tc` with count one; `params.n` overrides that count.
+   * Missing keys warn and render literally as `[key]`.
    */
   t(key: TranslationKey | Translation, params?: TranslationParams): string
 
   /**
-   * Return the (possibly parameterized) translation for the specified message
-   * in the current language, with pluralization.
+   * Translate a key or inline message with basic pluralization.
    *
-   * String messages can contain variants separated by unescaped pipes:
+   * Strings split at unescaped pipes; readonly tuples contain explicit variants:
    *
-   * - `" one apple | {n} apples "` when _two_ translations are separated by a pipe, the first is used for singular, and
-   *   the second for zero or plural.
-   * - `" no apples | one apple | {n} apples "` when _three_ translations are separated by a pipe, the first will be used
-   *   for zero, the second for singular, and the third for plural.
+   * - One variant serves every count.
+   * - Two variants mean singular/plural; zero uses plural.
+   * - Three variants mean zero/singular/plural.
    *
-   * Messages can also be readonly tuples: `[message]`, `[singular, plural]`,
-   * or `[zero, singular, plural]`. Pipes inside tuple elements are literal;
-   * placeholders and their escapes are still parsed.
-   *
-   * The `{n}` parameter defaults to the supplied count. `params.n` overrides
-   * both its displayed value and plural selection. Zero and one select their
-   * respective variants; every other count selects the plural variant.
+   * Tuple pipes are literal. Both forms support placeholders and their escapes.
+   * `params.n` overrides the supplied count for display and variant selection.
+   * Only zero and one are special; all other counts use plural.
+   * Missing keys warn and render literally as `[key]` for every count.
    */
   tc(key: TranslationKey | Translation, n: number, params?: TranslationParams): string
 
   /**
    * Format a number according to the current locale.
    *
-   * When `format` is provided, it will be used to configure the number format.
-   * Accepts a built-in or custom alias, or an `Intl.NumberFormatOptions`
-   * object. Omitting it selects the `default` alias. A null or undefined
-   * value produces an empty string.
+   * Accepts a built-in/custom alias or `Intl.NumberFormatOptions`.
+   * Omitting the format selects `default`. Null or undefined produces an empty string.
    */
   n(value?: number | bigint | null, format?: NumberFormatAlias | Intl.NumberFormatOptions): string
 
   /**
    * Format a date and time according to the current locale.
    *
-   * When `format` is provided, it will be used to configure the date and time
-   * format. Accepts a built-in or custom alias, or an
-   * `Intl.DateTimeFormatOptions` object. Omitting it selects the `default`
-   * alias. The explicit `timeZone` takes precedence over `format.timeZone`,
-   * then `defaultTimeZone`, then the runtime's time zone.
+   * Accepts a built-in/custom alias or `Intl.DateTimeFormatOptions`;
+   * omitting the format selects `default`. Null, undefined, or an empty string
+   * produces an empty string. Time zone precedence: explicit argument, format
+   * option, configured default, then runtime default.
    */
   d(date?: DateInput, format?: DateTimeFormatAlias | Intl.DateTimeFormatOptions, timeZone?: string): string
 
@@ -128,24 +106,15 @@ export interface Translator {
    */
   hasTranslation(key: string): boolean
 
-  /** Extra internationalization utilities */
+  /** Locale display names, flags, and the deprecated update alias. */
   utils: {
-    /**
-     * Return the name of the language for the given ISO-639-1 code localized
-     * using the current locale.
-     */
+    /** Return a language name in the current locale. */
     language(code: ISOLanguage): string
 
-    /**
-     * Return the name of the country (or region) for the given ISO-3166-1 code
-     * (or CLDR region code) using the current locale.
-     */
+    /** Return a country or region name in the current locale. */
     country(code: ISOCountry | 'EU' | 'UN'): string
 
-    /**
-     * Return the flag emoji for the given ISO-3166-1 code (or CLDR region
-     * code).
-     */
+    /** Return the flag emoji for a country, the EU, or the UN. */
     flag(code: ISOCountry | 'EU' | 'UN'): string
 
     /** @deprecated Use `translator.updateTranslations(...)` instead. */
@@ -184,6 +153,7 @@ const DEFAULT_NUMBER_FORMATS = {
   default: {},
 } as const satisfies NumberFormats
 
+/** Warn about codes absent from the language and country tables. */
 function checkLocale(locale: Intl.Locale): void {
   if (!ISO_LANGUAGES.includes(locale.language as any)) {
     warn(`Unknown language code "${locale.language}"`)
@@ -230,7 +200,6 @@ class TranslatorImpl implements Translator {
       ? `${defaultLocale.language}-${defaultLocale.region}`
       : defaultLocale.language
 
-    // Default time zone
     this._defaultTimeZone = options.defaultTimeZone
 
     // Snapshot the translations, including copies of message tuples.
@@ -268,7 +237,7 @@ class TranslatorImpl implements Translator {
       let languageCache = this._cache.get(languages[0])
       if (!languageCache) this._cache.set(languages[0], (languageCache = new Map()))
 
-      // Get the translation from the cache or parse it
+      // Reuse the parsed template or build it once.
       let template = languageCache.get(translation)
       if (!template) {
         const object = this._translations.get(translation)
@@ -370,7 +339,6 @@ class TranslatorImpl implements Translator {
       timeZone: { value: timeZone, enumerable: true },
     }) as Intl.DateTimeFormatOptions
 
-    // Format our date, optionally defaulting the time zone
     return new Intl.DateTimeFormat(this._locale.value, optionsWithTimeZone).format(date)
   }
 
@@ -463,10 +431,7 @@ function copyTranslation(translation: Partial<Translation> | undefined): Interna
   )
 }
 
-/**
- * Select a message in fallback order and parse its zero, singular, and
- * plural variants into literal strings and parameter tokens.
- */
+/** Select a message in fallback order and parse its plural variants. */
 function extractTemplate(translation: InternalTranslation, languages: LanguageKeys): TranslationTemplate {
   let message: InternalMessage | undefined = undefined
 
@@ -560,7 +525,7 @@ function parseTemplate(template: string): TemplatePart[] {
 
 /** Select a plural variant, substitute parameters once, and trim the result. */
 function replaceParams(template: TranslationTemplate, params: TranslationParams, format: Intl.NumberFormat): string {
-  // Select the template to use based on the "n" (number) parameter
+  // Select the variant using the effective count.
   const n = typeof params['n'] === 'string' ? Number(params['n']) : params['n']
   const formatted = n === 0 ? template.zero : n === 1 ? template.singular : template.plural
 
@@ -588,4 +553,5 @@ interface TranslatorConstructor {
   new (options: I18nOptions): Translator
 }
 
+/** Internal constructor exposed through the public instance interface. */
 export const Translator: TranslatorConstructor = TranslatorImpl

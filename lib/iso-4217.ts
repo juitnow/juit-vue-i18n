@@ -170,7 +170,7 @@ export type ISOCurrencies = {
 /** Currency code union derived from the static reference table. */
 export type ISOCurrency = keyof ISOCurrencies
 
-/** Check runtime currency support; the static type may differ from the runtime's codes. */
+/** Check runtime currency support; runtime codes may differ from the static union. */
 export function isISOCurrency(value: unknown): value is ISOCurrency {
   return ISO_CURRENCIES.includes(value as ISOCurrency)
 }
