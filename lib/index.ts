@@ -1,11 +1,10 @@
 import { inject } from 'vue'
 
 import { isISOLanguage } from './iso-639.ts'
-import { makeTranslator } from './translator.ts'
+import { Translator } from './translator.ts'
 
 import type { ISOLanguage } from './iso-639.ts'
 import type { ISOCurrency } from './iso-4217.ts'
-import type { Translator } from './translator.ts'
 import type { App } from 'vue'
 
 /* ===== REFERENCE LANGUAGES, COUNTRIES, AND CURRENCIES ====================== */
@@ -247,7 +246,7 @@ const injectionSymbol = Symbol.for('@juit/vue-i18n/translator')
 export function i18n(app: App, optionsOrLanguage: Language | I18nOptions): App {
   const options = typeof optionsOrLanguage === 'string' ? { defaultLanguage: optionsOrLanguage } : optionsOrLanguage
 
-  const translator = makeTranslator(options)
+  const translator = new Translator(options)
 
   app.config.globalProperties.$t = translator.t.bind(translator)
   app.config.globalProperties.$tc = translator.tc.bind(translator)
