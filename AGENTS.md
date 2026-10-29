@@ -85,6 +85,8 @@ dictionaries to the plugin. See [Configuring Types](README.md#configuring-types)
 
 ## Repository layout
 
+- `SKILL.md`: consumer integration guidance shipped in the npm package. Keep it
+  focused on using the public API; `AGENTS.md` is internal and excluded from npm.
 - `lib/index.ts`: public exports, configuration types, Vue plugin installation,
   `useTranslator()`, component global types, and `LanguageMatcher`.
 - `lib/translator.ts`: reactive locale state, translation parsing and caching,
@@ -108,7 +110,6 @@ dictionaries to the plugin. See [Configuring Types](README.md#configuring-types)
   projects for default and augmented types.
 - `test/data/`: authoritative fixtures for this repository's country and
   language tables. See its README for provenance.
-
 - `build.ts`: PlugJS tasks for compilation, type checks, tests, coverage, and lint.
 - `tsconfig.options.json`: shared strict NodeNext compiler options;
   `lib/tsconfig.json` emits ESM, declarations, and maps into `dist/`.
@@ -260,6 +261,12 @@ run lint and verify that code/types are unchanged. Do not hand-edit generated
 `dist/`, `.coverage-data/`, or `coverage/` files. Match the existing TypeScript
 style and keep README examples and source comments consistent with changed
 behavior.
+
+Keep `AGENTS.md` and `SKILL.md` up to date automatically as code changes;
+no separate confirmation is needed. Review both with each change and update
+any affected guidance. `AGENTS.md` covers internal development; the distributed
+`SKILL.md` covers consumer integration. Keep public examples aligned with
+`README.md` and source comments.
 
 ## Code style
 
