@@ -12,6 +12,8 @@ browsers.
 It also integrates with TypeScript to provide compile-time checks for
 required translation languages and translation keys.
 
+For agents integrating the package into an application, see [SKILL.md](SKILL.md).
+
 ## Table of Contents
 
 - [Installation](#installation)
