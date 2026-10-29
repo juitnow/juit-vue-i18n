@@ -1,3 +1,6 @@
+import { JSDOM } from 'jsdom'
+import { defineComponent } from 'vue'
+
 import {
   i18n,
   isISOCountry,
@@ -6,18 +9,15 @@ import {
   ISO_COUNTRIES,
   ISO_LANGUAGES,
   useTranslator,
-} from '@juit/vue-i18n'
-import { JSDOM } from 'jsdom'
-import { defineComponent } from 'vue'
-
+} from '../lib/index.ts'
 import languages from './data/iso_639-1.json' with { type: 'json' }
 import countries from './data/iso_3166-1.json' with { type: 'json' }
 import { createJSDomApp } from './jsdom-vue.ts'
 
-import type { I18nOptions, TranslationMessage, Translator } from '@juit/vue-i18n'
+import type { I18nOptions, TranslationMessage, Translator } from '../lib/index.ts'
 import type { App } from 'vue'
 
-declare module '@juit/vue-i18n' {
+declare module '../lib/index.ts' {
   export interface I18nConfiguration {
     languages: 'de' | 'en'
     translationKeys: 'hello' | 'cats'
