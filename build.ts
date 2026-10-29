@@ -7,6 +7,8 @@ import { tsbuild } from '@plugjs/tsgo'
 export default plugjs({
   /** Flag indicating whether linting/formatting errors should be fixed or not */
   fix: 'false',
+  /** Flag indicating whether uncovered lines should be reported in coverage */
+  reportUncovered: 'false',
 
   /** Transpile all sources and produce some JavaScript code in 'dist' */
   async transpile(): Promise<void> {
@@ -42,6 +44,7 @@ export default plugjs({
       banner('Preparing coverage report')
       await find('**/*.ts', { directory: 'lib', ignore: 'configs/*.ts' }) //
         .coverage('.coverage-data', {
+          reportUncoveredLines: this.reportUncovered === 'true',
           reportDir: 'coverage',
           minimumCoverage: 100,
           minimumFileCoverage: 100,
