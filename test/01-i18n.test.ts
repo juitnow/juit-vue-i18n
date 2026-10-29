@@ -15,6 +15,7 @@ import countries from './data/iso_3166-1.json' with { type: 'json' }
 import { createJSDomApp } from './jsdom-vue.ts'
 
 import type { I18nOptions, TranslationMessage, Translator } from '@juit/vue-i18n'
+import type { App } from 'vue'
 
 declare module '@juit/vue-i18n' {
   export interface I18nConfiguration {
@@ -25,6 +26,14 @@ declare module '@juit/vue-i18n' {
 
 describe('I18N Plugin', () => {
   let translator: Translator
+  const fixtures: { app: App; dom: JSDOM }[] = []
+
+  afterEach(() => {
+    for (const { app, dom } of fixtures.splice(0)) {
+      app.unmount()
+      dom.window.close()
+    }
+  })
 
   function makeTranslator(options: I18nOptions): Translator {
     let translator: Translator | undefined
@@ -37,12 +46,14 @@ describe('I18N Plugin', () => {
       },
     })
 
-    createJSDomApp(dom, component).use(i18n, options).mount('#app')
+    const app = createJSDomApp(dom, component)
+    fixtures.push({ app, dom })
+    app.use(i18n, options).mount('#app')
     expect(translator).toBeDefined()
     return translator!
   }
 
-  it('should create a translator', () => {
+  beforeEach(() => {
     translator = makeTranslator({
       defaultLanguage: 'en',
       translations: {
@@ -52,10 +63,12 @@ describe('I18N Plugin', () => {
           'de-DE': 'Hallo, Deutschland!',
           'de-AT': 'Hallo, Österreich!',
         },
-        world: null as any as Record<'en' | 'de', string>, // this should not brea
+        world: null as any as Record<'en' | 'de', string>, // Invalid untyped entries should not break initialization.
       },
     })
+  })
 
+  it('should create a translator', () => {
     expect(translator).toBeDefined()
 
     expect(translator.language).toEqual('en')
@@ -64,8 +77,6 @@ describe('I18N Plugin', () => {
   })
 
   it('should translate a string in various languages', () => {
-    if (!translator) return skip()
-
     expect(translator.t('hello')).toEqual('Hello, World!')
 
     translator.language = 'de'
@@ -109,8 +120,6 @@ describe('I18N Plugin', () => {
   })
 
   it('should find the best match for missing languages', () => {
-    if (!translator) return skip()
-
     translator.locale = new Intl.Locale('de-CH')
     expect(translator.t('hello')).toEqual('Hallo, Welt!')
 
@@ -140,8 +149,6 @@ describe('I18N Plugin', () => {
   })
 
   it('should format a number in various languages', () => {
-    if (!translator) return skip()
-
     translator.locale = new Intl.Locale('en-US')
     expect(translator.n(1234.56)).toEqual('1,234.56')
     expect(translator.n(null)).toEqual('')
@@ -154,8 +161,6 @@ describe('I18N Plugin', () => {
   })
 
   it('should format a number (as a currency) in various languages', () => {
-    if (!translator) return skip()
-
     translator.locale = new Intl.Locale('en-US')
     expect(translator.n(1234.56, 'EUR')).toEqual('€1,234.56')
     expect(translator.n(1234.56, 'USD')).toEqual('$1,234.56')
@@ -170,8 +175,6 @@ describe('I18N Plugin', () => {
   })
 
   it('should format a date and time in various languages', () => {
-    if (!translator) return skip()
-
     const date = new Date(1234567890123) // remember, by default the timezone is local, sooooo...
 
     const dateTimeEN = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'medium' }).format(date)
@@ -226,8 +229,6 @@ describe('I18N Plugin', () => {
   })
 
   it('should format a date and time in various languages with string styles', () => {
-    if (!translator) return skip()
-
     const date = new Date(1234567890123) // remember, by default the timezone is local, sooooo...
 
     translator.locale = new Intl.Locale('en-US')
@@ -298,8 +299,6 @@ describe('I18N Plugin', () => {
   })
 
   it('should format a date and time in various languages with object formats', () => {
-    if (!translator) return skip()
-
     const date = new Date(1234567890123) // remember, by default the timezone is local, sooooo...
 
     translator.locale = new Intl.Locale('en-US')
@@ -337,7 +336,7 @@ describe('I18N Plugin', () => {
     ).toEqual('Samstag, 14.02.2009, 00:31:30 Mitteleuropäische Normalzeit')
   })
 
-  it('should format ad date honoring the default time zone', () => {
+  it('should format a date honoring the default time zone', () => {
     const translator = makeTranslator({
       defaultLanguage: 'en-GB',
       defaultTimeZone: 'UTC',
@@ -442,8 +441,6 @@ describe('I18N Plugin', () => {
   })
 
   it('should format a number in various languages with object formats', () => {
-    if (!translator) return skip()
-
     translator.locale = new Intl.Locale('en-US')
 
     expect(
@@ -464,8 +461,6 @@ describe('I18N Plugin', () => {
   })
 
   it('should parameterize translations', () => {
-    if (!translator) return skip()
-
     translator.locale = new Intl.Locale('en-US')
 
     expect(
@@ -653,8 +648,6 @@ describe('I18N Plugin', () => {
   })
 
   it('should pluralize translations', () => {
-    if (!translator) return skip()
-
     translator.locale = new Intl.Locale('en-US')
 
     expect(
@@ -841,8 +834,6 @@ describe('I18N Plugin', () => {
   })
 
   it('should pluralize translations with an option for zero', () => {
-    if (!translator) return skip()
-
     translator.locale = new Intl.Locale('en-US')
 
     expect(
@@ -971,7 +962,7 @@ describe('I18N Plugin', () => {
   })
 
   describe('Edge Cases', () => {
-    it('should warn with an invalid locales', () => {
+    it('should warn with invalid locales', () => {
       const translator = makeTranslator({ defaultLanguage: new Intl.Locale('xx-ZZ') })
 
       expect(translator.locale.language).toEqual('xx')
