@@ -263,13 +263,15 @@ class TranslatorImpl implements Translator {
       // Get the translation from the cache or parse it
       let template = languageCache.get(translation)
       if (!template) {
-        let object = this._translations.get(translation)
-        if (!object) {
+        const object = this._translations.get(translation)
+        if (object) {
+          template = extractTemplate(object, languages)
+        } else {
           warn(`Translation key "${translation}" not found`)
-          object = new Map()
-          object.set(languages[languages.length - 1]!, translation)
+          // Missing keys are literal text, never message syntax.
+          const fallback = `[${translation}]`
+          template = { zero: [fallback], singular: [fallback], plural: [fallback] }
         }
-        template = extractTemplate(object, languages)
 
         languageCache.set(translation, template)
       }

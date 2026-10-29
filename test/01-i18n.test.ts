@@ -990,7 +990,39 @@ describe('I18N Plugin', () => {
 
     it('should warn when translating a missing translation', () => {
       const translator = makeTranslator({ defaultLanguage: 'en' })
-      expect(translator.t('flipper' as any)).toEqual('flipper')
+      expect(translator.t('flipper' as any)).toEqual('[flipper]')
+    })
+
+    it('should render missing keys literally in brackets for every plural form', () => {
+      const translator = makeTranslator({ defaultLanguage: 'en' })
+      const keys = [
+        'missing',
+        'missing|label',
+        'missing {n}',
+        'missing { name }',
+        String.raw`missing\|\{name}`,
+        '[missing]',
+      ]
+
+      for (const key of keys) {
+        const expected = `[${key}]`
+        expect(translator.t(key as any, { name: 'Alice', n: 42 })).toEqual(expected)
+        for (const count of [0, 1, 2]) {
+          expect(translator.tc(key as any, count, { name: 'Alice' })).toEqual(expected)
+        }
+      }
+    })
+
+    it('should replace a cached literal missing-key fallback with parsed translations', () => {
+      const translator = makeTranslator({ defaultLanguage: 'en' })
+      const key = 'missing|{name}'
+      expect(translator.t(key as any, { name: 'Alice' })).toEqual(`[${key}]`)
+
+      // Exercise an arbitrary key beyond this test project's configured key union.
+      translator.updateTranslations({ [key]: { en: 'none | Hello {name} | {n} items' } } as any)
+      expect(translator.tc(key as any, 0)).toEqual('none')
+      expect(translator.t(key as any, { name: 'Alice' })).toEqual('Hello Alice')
+      expect(translator.tc(key as any, 2)).toEqual('2 items')
     })
 
     it('should warn when missing the default language', () => {

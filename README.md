@@ -198,6 +198,12 @@ const hello = translator.t('hello')
 // the "hello" string will be "Hello, world!" or "Hallo, Welt!"
 ```
 
+If a translation key is not configured, the translator logs a warning and
+renders the key literally inside square brackets: `missing` becomes `[missing]`
+for every count. Pipes, placeholders, and escapes in missing keys are not
+interpreted. Adding the translation through `updateTranslations(...)` replaces
+the fallback and updates reactive consumers.
+
 It can also take an inline translation:
 
 ```typescript

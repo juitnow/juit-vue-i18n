@@ -189,6 +189,8 @@ workflow stops on failure, so run lint separately if coverage blocks it.
 - A message is a string or a readonly tuple of one to three strings. One variant
   serves all counts; two mean singular/plural (zero uses plural); three mean
   zero/singular/plural. Only counts zero and one receive special treatment.
+- Missing keys warn and render literally as `[key]` for all counts. Do not
+  parse missing keys as message syntax. Updates invalidate cached fallbacks.
 - `t()` delegates to `tc()` with count one. `params.n` overrides both the value
   inserted for `{n}` and the count used for variant selection.
 - Strings split at unescaped pipes. Tuples skip pipe splitting and pipe

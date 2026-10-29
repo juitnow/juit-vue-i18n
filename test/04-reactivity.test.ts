@@ -248,7 +248,9 @@ describe('Translator reactivity', () => {
           try {
             app.mount('#app')
             // Missing keys render literally and populate the fallback template cache.
-            expect(contents()).toEqual(initialMessages === 'existing' ? ['Hello, Alice!', '2 cats'] : ['hello', 'cats'])
+            expect(contents()).toEqual(
+              initialMessages === 'existing' ? ['Hello, Alice!', '2 cats'] : ['[hello]', '[cats]'],
+            )
 
             // Updating messages alone should invalidate the rendered translations.
             // Do not change locale or force a component render to make this pass.
