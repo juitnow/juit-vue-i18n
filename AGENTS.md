@@ -102,6 +102,8 @@ dictionaries to the plugin. See [Configuring Types](README.md#configuring-types)
 - `test/jsdom-vue.ts`: custom Vue renderer backed by an explicit JSDOM document;
   `createJSDomApp` supports element and selector mount targets.
 - `test/03-matcher.test.ts`: matcher runtime and type assertions.
+- `test/04-reactivity.test.ts`: locale and message updates in compiled templates
+  and computed values, reactive containers, and conditional static content.
 - `test/types/default/` and `test/types/configured/`: separate compiler-only
   projects for default and augmented types.
 - `test/data/`: authoritative fixtures for this repository's country and
