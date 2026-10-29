@@ -1,14 +1,41 @@
-import { i18n, useTranslator } from '@juit/vue-i18n'
 import { JSDOM } from 'jsdom'
-import { compile, computed, defineComponent, nextTick } from 'vue'
+import { compile, computed, createApp, defineComponent, nextTick, reactive, ref } from 'vue'
 
+import { i18n, useTranslator } from '../lib/index.ts'
 import { createJSDomApp } from './jsdom-vue.ts'
 
-import type { Translator } from '@juit/vue-i18n'
+import type { Translator } from '../lib/index.ts'
 
 describe('Translator reactivity', () => {
   const amount = 1234.56
   const date = new Date('2026-01-02T12:00:00Z')
+
+  for (const container of ['ref', 'reactive'] as const) {
+    it(`should preserve locale access and reactivity inside a ${container} container`, () => {
+      const app = createApp({}).use(i18n, {
+        defaultLanguage: 'en',
+        translations: { hello: { en: 'Hello', de: 'Hallo' } },
+      })
+      const translator = app.runWithContext(() => useTranslator())
+      const wrapped = container === 'ref' ? ref(translator).value : reactive({ translator }).translator
+      const language = computed(() => wrapped.language)
+      const text = computed(() => wrapped.t('hello'))
+
+      expect(language.value).toEqual('en')
+      expect(text.value).toEqual('Hello')
+      wrapped.language = 'de'
+      expect(language.value).toEqual('de')
+      expect(text.value).toEqual('Hallo')
+      wrapped.region = 'AT'
+      expect(wrapped.locale.toString()).toEqual('de-AT')
+      wrapped.locale = new Intl.Locale('en-GB')
+      expect(wrapped.language).toEqual('en')
+      expect(wrapped.region).toEqual('GB')
+      expect(text.value).toEqual('Hello')
+      wrapped.updateTranslations({ hello: { en: 'Welcome' } })
+      expect(text.value).toEqual('Welcome')
+    })
+  }
 
   for (const mode of ['template globals', 'computed translations'] as const) {
     it(`should update HTML after language, region, and locale changes using ${mode}`, async () => {
