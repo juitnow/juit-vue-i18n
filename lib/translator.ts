@@ -1,4 +1,4 @@
-import { computed, shallowRef, warn } from 'vue'
+import { computed, markRaw, shallowRef, warn } from 'vue'
 
 import { ISO_LANGUAGES } from './iso-639.ts'
 import { ISO_COUNTRIES } from './iso-3166.ts'
@@ -53,6 +53,7 @@ export type DateInput = Date | string | number | null | undefined
  * Configured instances can be accessed using the `useTranslator()` composition
  * function, which will provide an instance of the translator.
  */
+// oxlint-disable-next-line no-redeclare - redeclared as exported class
 export interface Translator {
   /** The current ISO-639-1 language code used by this translator. */
   language: ISOLanguage
@@ -188,38 +189,29 @@ function checkLocale(locale: Intl.Locale): void {
   }
 }
 
-/** Create a translator whose locale and message revisions are reactive. */
-export function makeTranslator(options: I18nOptions): Translator {
-  return new TranslatorImpl(options)
-}
-
 /** Internal translator state and behavior, isolated for each app. */
 class TranslatorImpl implements Translator {
-  readonly #defaultTimeZone: string | undefined
-  readonly #translations: InternalTranslations
-  readonly #dateTimeFormats: DateTimeFormats
-  readonly #numberFormats: NumberFormats
-  readonly #locale: ShallowRef<Intl.Locale>
-  readonly #languages: ComputedRef<LanguageKeys>
-  readonly #revision = shallowRef(0)
-  // Parsed templates, keyed by current language/region and then message key.
-  readonly #cache = new Map<string, Map<string, TranslationTemplate>>()
+  private readonly _defaultTimeZone: string | undefined
+  private readonly _translations: InternalTranslations
+  private readonly _dateTimeFormats: DateTimeFormats
+  private readonly _numberFormats: NumberFormats
+  private readonly _locale: ShallowRef<Intl.Locale>
+  private readonly _languages: ComputedRef<LanguageKeys>
+  private readonly _revision = shallowRef(0)
+  private readonly _cache = new Map<string, Map<string, TranslationTemplate>>()
 
-  readonly utils: Translator['utils']
+  /* ===== CONSTRUCTOR ====================================================== */
 
   constructor(options: I18nOptions) {
+    // Internal refs provide reactivity; prevent Vue proxies from unwrapping them.
+    markRaw(this)
+
     // Preserve detached calls while declaring behavior as prototype methods.
     this.t = this.t.bind(this)
     this.tc = this.tc.bind(this)
     this.n = this.n.bind(this)
     this.d = this.d.bind(this)
     this.updateTranslations = this.updateTranslations.bind(this)
-    this.utils = {
-      language: this.#languageName.bind(this),
-      country: this.#countryName.bind(this),
-      flag: this.#flag.bind(this),
-      updateTranslations: this.updateTranslations.bind(this),
-    }
 
     // Parse the configured default language, or use the supplied locale.
     const defaultLocale =
@@ -231,25 +223,25 @@ class TranslatorImpl implements Translator {
       : defaultLocale.language
 
     // Default time zone
-    this.#defaultTimeZone = options.defaultTimeZone
+    this._defaultTimeZone = options.defaultTimeZone
 
     // Snapshot the translations, including copies of message tuples.
-    this.#translations = new Map()
+    this._translations = new Map()
     Object.entries(options.translations ?? {}).forEach(([key, value]) => {
-      this.#translations.set(key, copyTranslation(value))
+      this._translations.set(key, copyTranslation(value))
     })
 
     // Use null prototypes so inherited properties cannot resolve as format aliases.
-    this.#dateTimeFormats = Object.assign(Object.create(null), DEFAULT_DATE_TIME_FORMATS, options.dateTimeFormats)
-    this.#numberFormats = Object.assign(Object.create(null), DEFAULT_NUMBER_FORMATS, options.numberFormats)
+    this._dateTimeFormats = Object.assign(Object.create(null), DEFAULT_DATE_TIME_FORMATS, options.dateTimeFormats)
+    this._numberFormats = Object.assign(Object.create(null), DEFAULT_NUMBER_FORMATS, options.numberFormats)
 
     // Initialize the current locale from the configured default.
-    this.#locale = shallowRef(new Intl.Locale(defaultLanguage))
-    checkLocale(this.#locale.value)
+    this._locale = shallowRef(new Intl.Locale(defaultLanguage))
+    checkLocale(this._locale.value)
 
     // Try the current regional variant and base language, then the default equivalents.
-    this.#languages = computed(() => {
-      const { language, region } = this.#locale.value
+    this._languages = computed(() => {
+      const { language, region } = this._locale.value
       const order: string[] = [language]
       if (region) order.unshift(`${language}-${region}`)
       if (language !== defaultLanguage) order.push(defaultLanguage)
@@ -258,14 +250,48 @@ class TranslatorImpl implements Translator {
     })
   }
 
+  /* ===== PRIVATE METHODS ================================================== */
+
+  private _getTemplate(translation: TranslationKey | Translation, languages: LanguageKeys): TranslationTemplate {
+    if (!translation) throw new Error('No translation key specified')
+
+    if (typeof translation === 'string') {
+      // Get the cache for the current language and optional region.
+      let languageCache = this._cache.get(languages[0])
+      if (!languageCache) this._cache.set(languages[0], (languageCache = new Map()))
+
+      // Get the translation from the cache or parse it
+      let template = languageCache.get(translation)
+      if (!template) {
+        let object = this._translations.get(translation)
+        if (!object) {
+          warn(`Translation key "${translation}" not found`)
+          object = new Map()
+          object.set(languages[languages.length - 1]!, translation)
+        }
+        template = extractTemplate(object, languages)
+
+        languageCache.set(translation, template)
+      }
+
+      return template
+    } else {
+      // Snapshot inline messages, including tuples, without caching the result.
+      const map = copyTranslation(translation)
+      return extractTemplate(map, languages)
+    }
+  }
+
+  /* ===== GETTERS AND SETTERS ============================================== */
+
   get locale(): Readonly<Intl.Locale> {
-    return this.#locale.value
+    return this._locale.value
   }
 
   set locale(value: Intl.Locale) {
     const locale = new Intl.Locale(value.language, { region: value.region })
     checkLocale(locale)
-    this.#locale.value = locale
+    this._locale.value = locale
   }
 
   get language(): ISOLanguage {
@@ -284,12 +310,14 @@ class TranslatorImpl implements Translator {
     this.locale = new Intl.Locale(this.language, { region: value || undefined })
   }
 
+  /* ===== PUBLIC METHODS =================================================== */
+
   n(value?: number | bigint | null, format: string | Intl.NumberFormatOptions = 'default'): string {
     if (value == null) return '' // null or undefined produces an empty string
 
     let options: Intl.NumberFormatOptions | undefined
     if (typeof format === 'string') {
-      options = this.#numberFormats[format]
+      options = this._numberFormats[format]
       if (!options) warn(`NumberFormat alias "${format}" not found`)
     } else options = format
 
@@ -302,9 +330,9 @@ class TranslatorImpl implements Translator {
 
   tc(translation: TranslationKey | Translation, n: number, params?: TranslationParams): string {
     // Track message updates in component renders and computed translations.
-    void this.#revision.value
-    const template = this.#getTemplate(translation, this.#languages.value)
-    const format = new Intl.NumberFormat(this.locale, this.#numberFormats['default'])
+    void this._revision.value
+    const template = this._getTemplate(translation, this._languages.value)
+    const format = new Intl.NumberFormat(this.locale, this._numberFormats['default'])
     return replaceParams(template, { n, ...params }, format)
   }
 
@@ -319,12 +347,12 @@ class TranslatorImpl implements Translator {
 
     let options: Intl.DateTimeFormatOptions | undefined
     if (typeof format === 'string') {
-      options = this.#dateTimeFormats[format]
+      options = this._dateTimeFormats[format]
       if (!options) warn(`DateTimeFormat alias "${format}" not found`)
     } else options = format
 
     // Prefer the explicit time zone, then the format's zone, then the default.
-    timeZone = timeZone ?? options?.timeZone ?? this.#defaultTimeZone
+    timeZone = timeZone ?? options?.timeZone ?? this._defaultTimeZone
 
     // Preserve inherited and non-enumerable getters that spreading would lose.
     // Define our own timeZone to override readonly properties without modifying the caller.
@@ -333,7 +361,7 @@ class TranslatorImpl implements Translator {
     }) as Intl.DateTimeFormatOptions
 
     // Format our date, optionally defaulting the time zone
-    return new Intl.DateTimeFormat(this.#locale.value, optionsWithTimeZone).format(date)
+    return new Intl.DateTimeFormat(this._locale.value, optionsWithTimeZone).format(date)
   }
 
   updateTranslations(updates: Partial<Record<TranslationKey, Partial<Translation>>>): void {
@@ -347,65 +375,42 @@ class TranslatorImpl implements Translator {
       for (const [lang, value] of translation) {
         if (!value) continue
 
-        let translation = this.#translations.get(key)
+        let translation = this._translations.get(key)
         if (!translation) translation = new Map()
         translation.set(lang, value)
-        this.#translations.set(key, translation)
+        this._translations.set(key, translation)
         updated = true
       }
     }
 
     // Invalidate templates before notifying reactive consumers.
     if (updated) {
-      this.#cache.clear()
-      this.#revision.value++
+      this._cache.clear()
+      this._revision.value++
     }
   }
 
-  #languageName(code: ISOLanguage): string {
-    return new Intl.DisplayNames(this.locale, { type: 'language' }).of(code)!
-  }
+  /* ===== UTILITIES ======================================================== */
 
-  #countryName(code: ISOCountry | 'EU' | 'UN'): string {
-    return new Intl.DisplayNames(this.locale, { type: 'region' }).of(code)!
-  }
+  utils: Translator['utils'] = {
+    updateTranslations: (updates) => {
+      this.updateTranslations(updates)
+    },
 
-  #flag(code: ISOCountry | 'EU' | 'UN'): string {
-    return [...code] // oxlint-disable-line typescript/no-misused-spread
-      .map((c) => c.codePointAt(0)!)
-      .map((n) => 0x1f1a5 + n)
-      .map((n) => String.fromCodePoint(n))
-      .join('')
-  }
+    language: (code) => {
+      return new Intl.DisplayNames(this.locale, { type: 'language' }).of(code)!
+    },
+    country: (code): string => {
+      return new Intl.DisplayNames(this.locale, { type: 'region' }).of(code)!
+    },
 
-  #getTemplate(translation: TranslationKey | Translation, languages: LanguageKeys): TranslationTemplate {
-    if (!translation) throw new Error('No translation key specified')
-
-    if (typeof translation === 'string') {
-      // Get the cache for the current language and optional region.
-      let languageCache = this.#cache.get(languages[0])
-      if (!languageCache) this.#cache.set(languages[0], (languageCache = new Map()))
-
-      // Get the translation from the cache or parse it
-      let template = languageCache.get(translation)
-      if (!template) {
-        let object = this.#translations.get(translation)
-        if (!object) {
-          warn(`Translation key "${translation}" not found`)
-          object = new Map()
-          object.set(languages[languages.length - 1]!, translation)
-        }
-        template = extractTemplate(object, languages)
-
-        languageCache.set(translation, template)
-      }
-
-      return template
-    } else {
-      // Snapshot inline messages, including tuples, without caching the result.
-      const map = copyTranslation(translation)
-      return extractTemplate(map, languages)
-    }
+    flag: (code): string => {
+      return [...code] // oxlint-disable-line typescript/no-misused-spread
+        .map((c) => c.codePointAt(0)!)
+        .map((n) => 0x1f1a5 + n)
+        .map((n) => String.fromCodePoint(n))
+        .join('')
+    },
   }
 }
 
@@ -560,3 +565,11 @@ function replaceParams(template: TranslationTemplate, params: TranslationParams,
     .join('')
     .trim()
 }
+
+/* ===== EXPORTS ============================================================ */
+
+interface TranslatorConstructor {
+  new (options: I18nOptions): Translator
+}
+
+export const Translator: TranslatorConstructor = TranslatorImpl
