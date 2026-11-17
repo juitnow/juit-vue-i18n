@@ -123,3 +123,14 @@ expectTypeOf(translator.hasTranslation(dynamicKey)).toEqualTypeOf<boolean>()
 translator.hasTranslation('unknown key')
 // @ts-expect-error Key inspection requires a string.
 translator.hasTranslation(42)
+
+translator.updateLanguageTranslations('en', { hello: '', cats: undefined })
+translator.updateLanguageTranslations('de-AT', { hello: ['Servus'] as const })
+// @ts-expect-error Language updates must use a configured base language.
+translator.updateLanguageTranslations('fr', { hello: 'Bonjour' })
+// @ts-expect-error Regional variants must belong to a configured language.
+translator.updateLanguageTranslations('fr-FR', { hello: 'Bonjour' })
+// @ts-expect-error Language updates must use configured translation keys.
+translator.updateLanguageTranslations('en', { missing: 'Hello' })
+// @ts-expect-error Language updates require valid message tuples.
+translator.updateLanguageTranslations('en', { hello: [] })

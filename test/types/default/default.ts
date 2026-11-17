@@ -91,3 +91,10 @@ expectTypeOf(translator.hasTranslation(dynamicKey)).toEqualTypeOf<boolean>()
 translator.hasTranslation('unknown key')
 // @ts-expect-error Key inspection requires a string.
 translator.hasTranslation(42)
+
+translator.updateLanguageTranslations('fr', { anything: 'Bonjour', omitted: undefined })
+translator.updateLanguageTranslations('fr-FR', { anything: ['Bonjour'] as const })
+// @ts-expect-error Language updates require valid ISO base language codes.
+translator.updateLanguageTranslations('zz', { anything: 'Hello' })
+// @ts-expect-error Regional updates require valid ISO base language codes.
+translator.updateLanguageTranslations('zz-ZZ', { anything: 'Hello' })

@@ -92,12 +92,27 @@ export interface Translator {
   d(date?: DateInput, format?: DateTimeFormatAlias | Intl.DateTimeFormatOptions, timeZone?: string): string
 
   /**
-   * Merge translations and clear cached templates. Undefined values are ignored;
-   * empty strings disable the translation and stop fallback lookup.
-   * Tuples are copied before storing.
+   * Merge translations and clear cached templates.
+   *
+   * Undefined values are ignored, empty strings disable the translation and
+   * stop fallback lookup, tuples are copied before storing.
+   *
    * Updates invalidate computed translations and schedule component renders.
    */
   updateTranslations(translations: Partial<Record<TranslationKey, Partial<Translation>>>): void
+
+  /**
+   * Merge translations for one base language or regional variant and clear cached templates.
+   *
+   * Undefined values are ignored; empty strings disable the translation and
+   * stop fallback lookup, tuples are copied before storing.
+   *
+   * Updates invalidate computed translations and schedule component renders.
+   */
+  updateLanguageTranslations(
+    language: keyof Translation,
+    translations: Partial<Record<TranslationKey, TranslationMessage>>,
+  ): void
 
   /**
    * Check whether a translation key is configured, regardless of locale or
@@ -189,6 +204,7 @@ class TranslatorImpl implements Translator {
     this.n = this.n.bind(this)
     this.d = this.d.bind(this)
     this.updateTranslations = this.updateTranslations.bind(this)
+    this.updateLanguageTranslations = this.updateLanguageTranslations.bind(this)
     this.hasTranslation = this.hasTranslation.bind(this)
 
     // Parse the configured default language, or use the supplied locale.
@@ -372,6 +388,17 @@ class TranslatorImpl implements Translator {
       // Write a fresh identity without tracking the caller as a consumer.
       this._translationSignal.value = {}
     }
+  }
+
+  updateLanguageTranslations(
+    language: keyof Translation,
+    translations: Partial<Record<TranslationKey, TranslationMessage>>,
+  ): void {
+    const updates: Partial<Record<TranslationKey, Partial<Translation>>> = Object.create(null)
+    for (const [key, message] of Object.entries(translations)) {
+      updates[key as TranslationKey] = { [language]: message }
+    }
+    this.updateTranslations(updates)
   }
 
   /* ===== UTILITIES ======================================================== */

@@ -612,6 +612,22 @@ Updates are merged into the existing translations: only the supplied
 key-language pairs are overwritten. In this example, the German translation
 of `hello` is preserved. New keys and language variants can also be added.
 
+For a dictionary containing messages for one language, use
+`translator.updateLanguageTranslations(language, messages)`. Base languages and
+regional variants are supported:
+
+```typescript
+translator.updateLanguageTranslations('de-AT', {
+  hello: 'Servus!',
+})
+```
+
+This merges only the supplied keys for that language, preserving other keys and
+languages. It follows the same validation, tuple copying, empty-string, cache,
+and reactive update rules as `updateTranslations(...)`. Both methods can be
+called after extracting them from the translator. Configured language and key
+types apply to this method too.
+
 Both translation keys and languages are optional in an update, so you do not
 need to supply every configured language. If you have configured
 `I18nConfiguration`, TypeScript checks the supplied keys and languages against

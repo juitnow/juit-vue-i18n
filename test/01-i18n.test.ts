@@ -1194,6 +1194,34 @@ describe('I18N Plugin', () => {
   })
 
   describe('Translation updates', () => {
+    it('should merge detached language updates, preserve special keys, and copy tuples atomically', () => {
+      // oxlint-disable-next-line typescript/unbound-method - deliberately verify detached calls
+      const { updateLanguageTranslations } = translator
+      const tuple: [string, string] = ['one', 'many']
+      updateLanguageTranslations('de-AT', { hello: tuple })
+      tuple.fill('mutated')
+      translator.locale = new Intl.Locale('de-AT')
+      expect(translator.tc('hello', 2)).toEqual('many')
+      translator.language = 'en'
+      expect(translator.t('hello')).toEqual('Hello, World!')
+
+      updateLanguageTranslations('en', JSON.parse('{"__proto__":"Prototype","constructor":"Constructor"}'))
+      expect(translator.hasTranslation('__proto__')).toEqual(true)
+      expect(translator.t('__proto__' as any)).toEqual('Prototype')
+      expect(translator.t('constructor' as any)).toEqual('Constructor')
+      expect(() =>
+        updateLanguageTranslations('en', {
+          hello: 'Must not be applied',
+          cats: ['none', undefined, 'many'],
+        }),
+      ).toThrowError(TypeError)
+      expect(translator.t('hello')).toEqual('Hello, World!')
+      updateLanguageTranslations('en', { hello: undefined })
+      expect(translator.t('hello')).toEqual('Hello, World!')
+      updateLanguageTranslations('en', { hello: '' })
+      expect(translator.t('hello')).toEqual('')
+    })
+
     it('should update translations', () => {
       const translator = makeTranslator({
         defaultLanguage: 'en',

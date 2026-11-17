@@ -86,6 +86,9 @@ and default base language.
   mutating the original dictionary. Updates merge partial messages and trigger
   reactive consumers. Await Vue's `nextTick()` before checking the updated DOM.
   `translator.utils.updateTranslations(...)` is a deprecated alias.
+- Use `translator.updateLanguageTranslations('de-AT', { hello: 'Servus!' })`
+  to merge a dictionary for one base language or regional variant. Other keys
+  and languages are preserved; the same update and reactivity rules apply.
 - Empty string messages produce blank output and stop fallback lookup, both on
   creation and updates. Undefined updates are ignored. Tuples are copied; gaps
   are rejected.

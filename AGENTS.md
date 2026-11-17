@@ -212,6 +212,11 @@ workflow stops on failure, so run lint separately if coverage blocks it.
 - Parsed templates contain literal strings and `{ param: string }` tokens.
   Cache them independently of parameter values. Caches are scoped to the
   translator's translation map, current language/region, and message key.
+- `translator.updateLanguageTranslations(language, messages)` merges a dictionary
+  for one base language or regional variant. Use `keyof Translation` for its
+  language type, preserve special keys with a null-prototype intermediate object,
+  and bind it for detached calls. Delegate validation and notification to
+  `updateTranslations`.
 - `translator.updateTranslations(...)` is the primary update API; keep
   `translator.utils.updateTranslations(...)` as a deprecated compatibility alias.
 - Updates are validated and copied before stored messages are changed. They

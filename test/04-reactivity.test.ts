@@ -354,7 +354,11 @@ describe('Translator reactivity', () => {
       }
     })
 
-    for (const entryPoint of ['updateTranslations', 'utils.updateTranslations'] as const) {
+    for (const entryPoint of [
+      'updateTranslations',
+      'utils.updateTranslations',
+      'updateLanguageTranslations',
+    ] as const) {
       for (const initialMessages of ['existing', 'missing'] as const) {
         it(`should update HTML after updating ${initialMessages} translations using ${mode} via ${entryPoint}`, async () => {
           const dom = new JSDOM('<!doctype html><html><body><div id="app"></div></body></html>')
@@ -403,9 +407,13 @@ describe('Translator reactivity', () => {
             // Updating messages alone should invalidate the rendered translations.
             // Do not change locale or force a component render to make this pass.
             const updateTranslations =
-              entryPoint === 'updateTranslations'
-                ? translator.updateTranslations.bind(translator)
-                : translator.utils.updateTranslations.bind(translator.utils)
+              entryPoint === 'updateLanguageTranslations'
+                ? (updates: { hello: { en: string }; cats: { en: string | [string, string] } }) => {
+                    translator.updateLanguageTranslations('en', { hello: updates.hello.en, cats: updates.cats.en })
+                  }
+                : entryPoint === 'updateTranslations'
+                  ? translator.updateTranslations.bind(translator)
+                  : translator.utils.updateTranslations.bind(translator.utils)
             updateTranslations({
               hello: { en: 'Welcome, {name}!' },
               cats: { en: ['one kitten', '{n} kittens'] },
