@@ -28,7 +28,7 @@ describe('Translator reactivity', () => {
       if (update === 'ignored') {
         translator.updateTranslations({})
         translator.updateTranslations({ cats: undefined })
-        translator.updateTranslations({ hello: { en: '' }, cats: { en: '', de: undefined } })
+        translator.updateTranslations({ hello: { en: undefined }, cats: { en: undefined, de: undefined } })
       } else {
         expect(() =>
           translator.updateTranslations({
@@ -413,6 +413,10 @@ describe('Translator reactivity', () => {
             await nextTick()
 
             expect(contents()).toEqual(['Welcome, Alice!', '2 kittens'])
+
+            updateTranslations({ hello: { en: '' }, cats: { en: '' } })
+            await nextTick()
+            expect(contents()).toEqual(['', ''])
           } finally {
             app.unmount()
             dom.window.close()

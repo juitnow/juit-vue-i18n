@@ -92,9 +92,9 @@ export interface Translator {
   d(date?: DateInput, format?: DateTimeFormatAlias | Intl.DateTimeFormatOptions, timeZone?: string): string
 
   /**
-   * Merge translations and clear cached templates. Empty strings and
-   * undefined values are ignored; use a tuple containing an empty string
-   * for an intentionally blank message. Tuples are copied before storing.
+   * Merge translations and clear cached templates. Undefined values are ignored;
+   * empty strings disable the translation and stop fallback lookup.
+   * Tuples are copied before storing.
    * Updates invalidate computed translations and schedule component renders.
    */
   updateTranslations(translations: Partial<Record<TranslationKey, Partial<Translation>>>): void
@@ -356,7 +356,7 @@ class TranslatorImpl implements Translator {
 
     for (const [key, translation] of copiedUpdates) {
       for (const [lang, value] of translation) {
-        if (!value) continue
+        if (value == null) continue
 
         let translation = this._translations.get(key)
         if (!translation) translation = new Map()
@@ -437,10 +437,10 @@ function extractTemplate(translation: InternalTranslation, languages: LanguageKe
 
   for (const language of languages) {
     message = translation.get(language)
-    if (message) break
+    if (message != null) break
   }
 
-  if (!message) {
+  if (message == null) {
     const language = languages[languages.length - 1]
     const entries = Object.fromEntries(translation.entries())
     warn(`Translation missing default language "${language}" in`, entries)

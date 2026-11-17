@@ -201,8 +201,8 @@ workflow stops on failure, so run lint separately if coverage blocks it.
 - Strings split at unescaped pipes. Tuples skip pipe splitting and pipe
   unescaping entirely. Tuple inputs are copied, including during updates.
 - Trailing undefined tuple slots are omitted; gaps and invalid tuple lengths
-  are rejected. Empty strings fall through during lookup and are ignored by
-  updates. Use `['']` for an intentionally blank translation.
+  are rejected. Empty strings are valid messages on creation and updates: they
+  produce blank output and stop fallback lookup. Undefined updates are ignored.
 - Placeholders are case-sensitive, trim their names, and support balanced nested
   braces. Missing parameters render as `{name}`. Only own parameter properties
   are substituted; inserted values are never parsed again.

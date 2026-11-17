@@ -86,8 +86,9 @@ and default base language.
   mutating the original dictionary. Updates merge partial messages and trigger
   reactive consumers. Await Vue's `nextTick()` before checking the updated DOM.
   `translator.utils.updateTranslations(...)` is a deprecated alias.
-- Empty string messages fall through during lookup and are ignored by updates.
-  Use `['']` for intentionally blank output. Tuples are copied; gaps are rejected.
+- Empty string messages produce blank output and stop fallback lookup, both on
+  creation and updates. Undefined updates are ignored. Tuples are copied; gaps
+  are rejected.
 - `translator.hasTranslation(key)` accepts any string and checks whether the
   key is configured, regardless of locale or empty messages. It is reactive
   and does not warn. There is no `$hasTranslation` template global.

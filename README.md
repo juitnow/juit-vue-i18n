@@ -617,8 +617,9 @@ need to supply every configured language. If you have configured
 `I18nConfiguration`, TypeScript checks the supplied keys and languages against
 those types.
 
-Empty strings and `undefined` values are ignored; they cannot be used to
-delete an existing translation. The method returns nothing and clears the
+Empty strings overwrite existing messages with blank output and stop fallback
+lookup, just as they do in the initial configuration. `undefined` values are
+ignored and cannot delete an existing translation. The method returns nothing and clears the
 translation cache when an update is applied, so subsequent calls to `t(...)`
 and `tc(...)` use the updated messages. Updates also invalidate computed
 translations and schedule Vue components using `$t`, `$tc`, or the translator

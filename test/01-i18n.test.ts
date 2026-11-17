@@ -167,7 +167,7 @@ describe('I18N Plugin', () => {
     const translator = makeTranslator({
       defaultLanguage: 'en-US',
       translations: {
-        hello: { en: 'Hello!', de: '' },
+        hello: { en: 'Hello!' } as any,
       },
     })
 
@@ -182,6 +182,37 @@ describe('I18N Plugin', () => {
 
     translator.updateTranslations({ hello: { 'de-DE': 'Guten Tag!' } })
     expect(translator.t('hello')).toEqual('Guten Tag!')
+  })
+
+  it('should preserve empty messages on creation and updates without falling back or warning', () => {
+    const warnings = captureWarnings(() => {
+      const translator = makeTranslator({
+        defaultLanguage: 'en',
+        translations: { hello: { 'en': 'Fallback', 'de': 'Hallo', 'de-DE': '' } },
+      })
+      translator.locale = new Intl.Locale('de-DE')
+      for (const count of [0, 1, 2]) {
+        expect(translator.tc('hello', count)).toEqual('')
+        expect(translator.tc({ en: 'Fallback', de: '' }, count)).toEqual('')
+      }
+
+      translator.region = undefined
+      expect(translator.t('hello')).toEqual('Hallo')
+      translator.updateTranslations({ hello: { de: '' }, cats: { de: '' } })
+      expect(translator.hasTranslation('cats')).toEqual(true)
+      for (const count of [0, 1, 2]) {
+        expect(translator.tc('hello', count)).toEqual('')
+        expect(translator.tc('cats', count)).toEqual('')
+      }
+
+      translator.language = 'en'
+      expect(translator.t('hello')).toEqual('Fallback')
+      translator.updateTranslations({ hello: { en: '' } })
+      expect(translator.t('hello')).toEqual('')
+      translator.updateTranslations({ hello: { en: 'Restored' } })
+      expect(translator.t('hello')).toEqual('Restored')
+    })
+    expect(warnings).toEqual([])
   })
 
   it('should format a number in various languages', () => {
@@ -855,7 +886,7 @@ describe('I18N Plugin', () => {
     expect(translator.tc('hello', 2)).toEqual('many updated')
   })
 
-  it('should use tuples in regional translations and fall back to string messages', () => {
+  it('should use regional tuples and stop fallback at empty string messages', () => {
     const translator = makeTranslator({
       defaultLanguage: 'en-US',
       translations: { hello: { 'en': 'one | many', 'de': '', 'de-AT': ['eins', 'viele'] as const } },
@@ -864,7 +895,7 @@ describe('I18N Plugin', () => {
     translator.locale = new Intl.Locale('de-AT')
     expect(translator.tc('hello', 2)).toEqual('viele')
     translator.region = 'DE'
-    expect(translator.tc('hello', 2)).toEqual('many')
+    expect(translator.tc('hello', 2)).toEqual('')
     translator.updateTranslations({ hello: { 'de-DE': ['eines', 'mehrere'] as const } })
     expect(translator.tc('hello', 2)).toEqual('mehrere')
   })

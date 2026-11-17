@@ -122,8 +122,8 @@ describe('I18n Plugin with Vue Apps', () => {
     app.runWithContext(function () {
       const translator = useTranslator()
 
-      translator.locale = new Intl.Locale('de-DE') // completely unknown
-      expect(translator.t({ en: 'Hello, World!', de: '' })).toEqual('Hello, World!')
+      translator.locale = new Intl.Locale('de-DE')
+      expect(translator.t({ en: 'Hello, World!', de: '' })).toEqual('')
     })
   })
 
