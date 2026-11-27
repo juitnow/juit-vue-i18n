@@ -1,6 +1,6 @@
 {
   "name": "@juit/vue-i18n",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "keywords": [
     "i18n",
     "internationalization",
@@ -38,17 +38,17 @@
     "dev": "plug -w lib -w test coverage"
   },
   "devDependencies": {
-    "@plugjs/cov8": "^0.7.18",
-    "@plugjs/expect5": "^0.7.18",
-    "@plugjs/oxc": "^0.1.19",
-    "@plugjs/plug": "^0.7.18",
-    "@plugjs/tsgo": "^0.1.6",
+    "@plugjs/cov8": "^0.7.19",
+    "@plugjs/expect5": "^0.7.19",
+    "@plugjs/oxc": "^0.1.20",
+    "@plugjs/plug": "^0.7.19",
+    "@plugjs/tsgo": "^0.1.7",
     "@types/jsdom": "^30.0.0",
     "expect-type": "^1.4.0",
     "jsdom": "^31.0.1",
-    "vue": "^3.5.45"
+    "vue": "^3.5.46"
   },
   "peerDependencies": {
-    "vue": "^3.5.45"
+    "vue": "^3.5.46"
   }
 }
